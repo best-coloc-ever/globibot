@@ -2,6 +2,8 @@ from inspect import getmembers, isfunction
 
 from parse import parse
 
+import asyncio
+
 class Module:
 
     def __init__(self, bot):
@@ -16,7 +18,8 @@ class Module:
         for format, command in self.actions:
             parsed = parse(format, message.content)
             if parsed:
-                await command(self, message, **parsed.named)
+                future = command(self, message, **parsed.named)
+                asyncio.ensure_future(future)
 
     async def respond(self, content):
         await self.bot.client.send_message(self.last_message.channel, content)
