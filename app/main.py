@@ -1,27 +1,15 @@
-GLOBIBOT_EMAIL_KEY = 'GLOBIBOT_EMAIL'
-GLOBIBOT_PASSWORD_KEY = 'GLOBIBOT_PASSWORD'
+from utils import run_async
 
-GLOBIBOT_DEFAULT_EMAIL = 'globibot.official@gmail.com'
-
-from bot import Globibot
-
-import sys
-import os
+from bot import init_globibot
+from web import run_web_app
 
 def main():
-    email = os.getenv(GLOBIBOT_EMAIL_KEY, GLOBIBOT_DEFAULT_EMAIL)
-    password = os.getenv(GLOBIBOT_PASSWORD_KEY)
+    globibot = init_globibot()
 
-    if password is None:
-        sys.exit(
-            "Please specify Globibot's credentials:\n"
-            " - Globibot's email:    {}\n"
-            " - Globibot's password: {}\n"
-                .format(GLOBIBOT_EMAIL_KEY, GLOBIBOT_PASSWORD_KEY)
-        )
-
-    globibot = Globibot(email, password)
-    globibot.boot()
+    run_async(
+        run_web_app(globibot),
+        globibot.boot()
+    )
 
 if __name__ == '__main__':
     main()
