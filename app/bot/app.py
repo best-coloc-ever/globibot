@@ -2,11 +2,11 @@ from .globibot import Globibot
 from . import constants as c
 from . import modules
 
-import os
+from os import getenv
 
-def init_globibot():
-    email = os.getenv(c.GLOBIBOT_EMAIL_KEY, c.GLOBIBOT_DEFAULT_EMAIL)
-    password = os.getenv(c.GLOBIBOT_PASSWORD_KEY)
+def init_globibot(web_app):
+    email = getenv(c.GLOBIBOT_EMAIL_KEY, c.GLOBIBOT_DEFAULT_EMAIL)
+    password = getenv(c.GLOBIBOT_PASSWORD_KEY)
 
     if password is None:
         raise RuntimeError(
@@ -17,7 +17,7 @@ def init_globibot():
         )
 
     bot_modules = [
-
+        modules.Hello,
     ]
 
-    return Globibot(bot_modules, email, password)
+    return Globibot(web_app, bot_modules, email, password)

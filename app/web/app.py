@@ -6,20 +6,26 @@ from utils.logging import logger
 from . import constants as c
 from . import handlers
 
-async def run_web_app(bot):
+def init_web_app():
     AsyncIOMainLoop().install()
 
     routes = [
-
+        # Standalone routes maybe ?
     ]
 
-    web_app = web.Application(
+    return WebApplication(
         routes,
         autoreload=True,
     )
 
-    try:
-        web_app.listen(c.DEFAULT_PORT)
-        logger.info('Web server listening on port {}'.format(c.DEFAULT_PORT))
-    except Exception as e:
-        logger.error('Could not start web server: {}'.format(e))
+class WebApplication(web.Application):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def run(self):
+        try:
+            self.listen(c.DEFAULT_PORT)
+            logger.info('Web server listening on port {}'.format(c.DEFAULT_PORT))
+        except Exception as e:
+            logger.error('Could not start web server: {}'.format(e))

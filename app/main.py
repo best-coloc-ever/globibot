@@ -1,13 +1,14 @@
 from utils import run_async
 
 from bot import init_globibot
-from web import run_web_app
+from web import init_web_app
 
 def main():
-    globibot = init_globibot()
+    web_app = init_web_app()
+    globibot = init_globibot(web_app)
 
     run_async(
-        run_web_app(globibot),
+        web_app.run(),
         globibot.boot()
     )
 

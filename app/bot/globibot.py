@@ -4,8 +4,9 @@ from utils.logging import logger
 
 class Globibot:
 
-    def __init__(self, modules, *credentials):
-        self.modules = modules
+    def __init__(self, web_app, module_classes, *credentials):
+        self.web_app = web_app
+        self.modules = list(map(lambda cls: cls(self), module_classes))
         self.credentials = credentials
 
         self.client = DiscordClient()
@@ -20,4 +21,8 @@ class Globibot:
 
     async def on_ready(self):
         logger.info('Globibot is online')
-        logger.info('Detected {} discord servers'.format(self.client.servers))
+        logger.info('Detected {} discord servers'.format(len(self.client.servers)))
+
+    async def on_message(self, message):
+        for module in self.modules:
+            await module.dispatch(message)
