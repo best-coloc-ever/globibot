@@ -4,7 +4,8 @@ RUN pip install --upgrade pip
 RUN pip install \
     git+https://github.com/Rapptz/discord.py@async \
     tornado \
-    parse
+    parse \
+    requests
 
 WORKDIR /app
 
