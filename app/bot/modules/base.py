@@ -16,7 +16,7 @@ class Module:
         for format, command in self.actions:
             parsed = parse(format, message.content)
             if parsed:
-                await command(self, message)
+                await command(self, message, **parsed.named)
 
     async def respond(self, content):
         last_channel = self.last_message.channel
