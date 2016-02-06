@@ -2,6 +2,8 @@ from discord import Client as DiscordClient
 
 from utils.logging import logger
 
+import asyncio
+
 class Globibot:
 
     def __init__(self, web_app, module_classes, *credentials):
@@ -25,4 +27,5 @@ class Globibot:
 
     async def on_message(self, message):
         for module in self.modules:
-            await module.dispatch(message)
+            future = module.dispatch(message)
+            asyncio.ensure_future(future)
