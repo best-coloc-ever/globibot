@@ -21,6 +21,7 @@ def init_globibot(web_app):
         modules.Hello,
         modules.Github,
         modules.Twitch,
+        modules.Twitter,
     ]
 
     return Globibot(web_app, bot_modules, email, password)
