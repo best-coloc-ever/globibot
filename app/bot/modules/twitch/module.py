@@ -24,7 +24,7 @@ class Twitch(Module):
         message = '`Twitch emotes` are now **disabled** in this channel'
         await self.respond(message)
 
-    @command('{emote_name:w}')
+    @command('!{emote_name:w}')
     async def display_emote(self, message, emote_name):
         if message.channel in self.emote_enabled_channels:
             emote_file = self.emote_store.get(emote_name)
