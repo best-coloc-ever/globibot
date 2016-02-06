@@ -19,9 +19,10 @@ class Module:
                 await command(self, message, **parsed.named)
 
     async def respond(self, content):
-        last_channel = self.last_message.channel
+        await self.bot.client.send_message(self.last_message.channel, content)
 
-        await self.bot.client.send_message(last_channel, content)
+    async def respond_file(self, file_path):
+        await self.bot.client.send_file(self.last_message.channel, file_path)
 
     def _action_list(self):
         actions = []
