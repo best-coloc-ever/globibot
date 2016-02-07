@@ -1,4 +1,5 @@
 from discord import Client as DiscordClient
+from discord import ChannelType
 
 from utils.logging import logger
 
@@ -9,10 +10,12 @@ class Globibot(DiscordClient):
     def __init__(self, web, module_classes, *credentials):
         super().__init__()
 
-        self.web_app = web_app
-        self.modules = list(map(lambda cls: cls(self), module_classes))
-        self.credentials = credentials
+        self.web = web
 
+        logger.debug('Initializing modules...')
+        self.modules = [cls(self) for cls in module_classes]
+
+        self.credentials = credentials
 
     async def boot(self):
         await self.start(*self.credentials)
@@ -25,6 +28,17 @@ class Globibot(DiscordClient):
         logger.info('Operating on {} discord servers'.format(len(self.servers)))
 
     async def on_message(self, message):
-        for module in self.modules:
-            future = module.dispatch(message)
-            asyncio.ensure_future(future)
+        if message.author.id != self.user.id: # ignoring our own messages
+            logger.debug('Dispatching message "{}"'.format(message.content))
+
+            for module in self.modules:
+                future = module.dispatch(message)
+                asyncio.ensure_future(future)
+
+    def find_voice_channel(self, name, server):
+        is_matching_channel = lambda channel: \
+            channel.type == ChannelType.voice and \
+            channel.name.lower() == name.lower()
+
+        matching_channels = filter(is_matching_channel, server.channels)
+        return next(matching_channels, None) # Returning first match or None

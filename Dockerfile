@@ -7,7 +7,7 @@ RUN pip install \
     parse \
     requests \
     twitter \
-    youtube_dl
+    youtube-dl
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \

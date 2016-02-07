@@ -3,8 +3,6 @@ from urllib.request import urlretrieve
 
 from imghdr import what as image_type
 
-from utils.logging import logger
-
 from collections import defaultdict
 
 import os
@@ -25,37 +23,39 @@ class EmoteStore:
         self.load_subscriber()
         self.load_bttv()
 
-        logger.info('loaded {} twitch emotes'.format(len(self.url_store)))
-
     def load_global(self):
-        response = requests.get('http://twitchemotes.com/api_cache/v2/global.json')
+        URL = 'http://twitchemotes.com/api_cache/v2/global.json'
+        response = requests.get(URL)
         data = response.json()
         for emote_name, emote in data['emotes'].items():
             image_id = str(emote['image_id'])
             for size in EmoteStore.SIZES:
-                template = data['template'][size]
-                self.url_store[emote_name][size] = template.replace('{image_id}', image_id)
+                url = data['template'][size].replace('{image_id}', image_id)
+                self.url_store[emote_name][size] = url
 
     def load_subscriber(self):
-        response = requests.get('http://twitchemotes.com/api_cache/v2/subscriber.json')
+        URL = 'http://twitchemotes.com/api_cache/v2/subscriber.json'
+        response = requests.get(URL)
         data = response.json()
         for channel in data['channels'].values():
             for emote in channel['emotes']:
                 code = emote['code']
                 image_id = str(emote['image_id'])
                 for size in EmoteStore.SIZES:
-                    template = data['template'][size]
-                    self.url_store[code][size] = template.replace('{image_id}', image_id)
+                    url = data['template'][size].replace('{image_id}', image_id)
+                    self.url_store[code][size] = url
 
     def load_bttv(self):
+        URL = 'https://api.betterttv.net/2/emotes'
         BTTV_SIZES = ['1x', '2x', '3x']
-        response = requests.get('https://api.betterttv.net/2/emotes')
+        response = requests.get(URL)
         data = response.json()
         template = data['urlTemplate']
         for emote in data['emotes']:
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
-                url = template.replace('{{id}}', emote['id']).replace('{{image}}', bttv_size)
-                self.url_store[emote['code']][size] = 'http:{}'.format(url)
+                location = template.replace('{{id}}', emote['id'])\
+                                   .replace('{{image}}', bttv_size)
+                self.url_store[emote['code']][size] = 'http:{}'.format(location)
 
     def get(self, emote_name, size):
         # Already downloaded ?
@@ -74,4 +74,5 @@ class EmoteStore:
         file_name = '{}.{}'.format(temp_file, ext)
         os.rename(temp_file, file_name)
         self.file_store[emote_name][size] = file_name
+
         return file_name

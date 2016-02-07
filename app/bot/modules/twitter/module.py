@@ -31,33 +31,55 @@ class Twitter(Module):
     async def last_tweet(self, message, name):
         user = self.get_user(name)
         if user is None:
-            await self.respond('Unable to locate a user named `{}`'.format(name))
+            await self.send_message(
+                message.channel,
+                'Unable to locate a user named `{}`'.format(name)
+            )
         else:
             tweets = self.get_tweets(user, 1)
             if tweets is None:
-                await self.respond('Unable to fetch the timeline of `{}`'.format(name))
+                await self.send_message(
+                    message.channel,
+                    'Unable to fetch the timeline of `{}`'.format(name)
+                )
             else:
-                await self.respond(format_tweet(tweets[0]))
+                await self.send_message(
+                    message.channel,
+                    format_tweet(tweets[0])
+                )
 
     @command('!twitter monitor {name:w}')
     async def monitor_user(self, message, name):
-        channel = self.last_message.channel
+        channel = message.channel
 
         if channel in self.streams[name]:
-            await self.respond('Already monitoring `{}`'.format(name))
+            await self.send_message(
+                channel,
+                'Already monitoring `{}`'.format(name)
+            )
         else:
             user = self.get_user(name)
             if user is None:
-                await self.respond('Unable to locate a user named `{}`'.format(name))
+                await self.send_message(
+                    channel,
+                    'Unable to locate a user named `{}`'.format(name)
+                )
             else:
                 self.streams[name].add(channel)
                 asyncio.ensure_future(self.read_stream(name, user, channel))
-                await self.respond('Now monitoring `{}` tweets in this channel'.format(name))
+                await self.send_message(
+                    channel,
+                    'Now monitoring `{}` tweets in this channel'.format(name)
+                )
 
     @command('!twitter unmonitor {name:w}')
     async def unmonitor_user(self, message, name):
-        self.streams[name].discard(self.last_message.channel)
-        await self.respond('Stopped monitoring `{}` tweets in this channel'.format(name))
+        self.streams[name].discard(message.channel)
+
+        await self.send_message(
+            message.channel,
+            'Stopped monitoring `{}` tweets in this channel'.format(name)
+        )
 
     def get_user(self, name):
         try:
@@ -88,7 +110,7 @@ class Twitter(Module):
                 break
             if tweet and 'text' in tweet:
                 if tweet['user']['id'] == user['id']:
-                    await self.bot.client.send_message(
+                    await self.send_message(
                         channel,
                         format_tweet(tweet)
                     )

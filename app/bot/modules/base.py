@@ -15,21 +15,12 @@ class Module:
         self.bot = bot
         self.actions = self._action_list()
 
-        self.last_message = None
-
     async def dispatch(self, message):
-        self.last_message = message
-
         for format, command in self.actions:
             parsed = parse(format, message.content)
             if parsed:
-                await command(self, message, **parsed.named)
-
-    async def respond(self, content):
-        await self.bot.client.send_message(self.last_message.channel, content)
-
-    async def respond_file(self, file_path):
-        await self.bot.client.send_file(self.last_message.channel, file_path)
+                future = command(self, message, **parsed.named)
+                asyncio.ensure_future(future)
 
     def _action_list(self):
         actions = []
@@ -43,7 +34,15 @@ class Module:
 
         return actions
 
-def command(format):
+    async def send_message(self, channel, content):
+        self.debug('Sending message: "{}"'.format(content))
+
+        await self.bot.send_message(channel, content)
+
+    async def send_file(self, channel, file_path):
+        self.debug('Sending file: "{}"'.format(file_path))
+
+        await self.bot.send_file(channel, file_path)
 
     def log(self, level, message):
         extra = {

@@ -8,7 +8,7 @@ class Github(Module):
         super().__init__(*args, **kwargs)
 
         self.notified_channels = set()
-        self.bot.web_app.add_handlers(r'.*$', [
+        self.bot.web.add_handlers(r'.*$', [
             (r'/github', GithubHandler, dict(module=self))
         ])
 
@@ -16,21 +16,25 @@ class Github(Module):
     async def enable_notifications(self, message):
         self.notified_channels.add(message.channel)
 
-        message = '`Github` notifications are now **enabled** in this channel'
-        await self.respond(message)
+        await self.send_message(
+            message.channel,
+            '`Github` notifications are now **enabled** in this channel'
+        )
 
     @command('!github disable')
     async def disable_notifications(self, message):
         self.notified_channels.discard(message.channel)
 
-        message = '`Github` notifications are now **disabled** in this channel'
-        await self.respond(message)
+        await self.send_message(
+            message.channel,
+            '`Github` notifications are now **disabled** in this channel'
+        )
 
     async def github_notification(self, event_type, data):
         message = build_message(event_type, data)
 
         for channel in self.notified_channels:
-            await self.bot.client.send_message(channel, message)
+            await self.send_message(channel, message)
 
 def build_message(event_type, data):
     message = 'Received a **`{}`** event from Github'.format(event_type)
@@ -44,13 +48,14 @@ def build_message(event_type, data):
     return message
 
 def push_details(data):
-    return """
-        **@{pusher}** just {forced}pushed **{commit_count} commit(s)** to `{repository}` on branch `{branch}`
-        summary of commits:
-        ```
-        {summary}
-        ```
-    """.format(
+    return (
+        '**@{pusher}** just {forced}pushed **{commit_count} commit(s)**'
+        'to `{repository}` on branch `{branch}`\n'
+        'summary of commits:\n'
+        '```\n'
+        '{summary}\n'
+        '```'
+    ).format(
         pusher=data['pusher']['name'],
         forced='**forced** ' if data['forced'] else '',
         commit_count=len(data['commits']),
@@ -60,10 +65,10 @@ def push_details(data):
     )
 
 def pull_request_details(data):
-    return """
-        A pull request has been **{action}** by **@{who}**
-        see {link} for more details
-    """.format(
+    return (
+        'A pull request has been **{action}** by **@{who}**\n'
+        'see {link} for more details'
+    ).format(
         action=data['action'],
         who=data['sender']['login'],
         link=data['pull_request']['html_url']
