@@ -9,6 +9,8 @@ import asyncio
 
 class Module:
 
+    FORMAT_MAGIC_ATTR = 'command_formats'
+
     def __init__(self, bot):
         self.bot = bot
         self.actions = self._action_list()
@@ -33,9 +35,11 @@ class Module:
         actions = []
 
         for _, function in getmembers(self.__class__, isfunction):
-            if hasattr(function, 'command_format'):
-                action = (function.command_format, function)
-                actions.append(action)
+            if hasattr(function, Module.FORMAT_MAGIC_ATTR):
+                formats = getattr(function, Module.FORMAT_MAGIC_ATTR)
+                for format in formats:
+                    action = (format, function)
+                    actions.append(action)
 
         return actions
 
@@ -61,12 +65,24 @@ def command(format):
 
     def critical(self, message):
         self.log(logging.CRITICAL, message)
+
+
+def command(format):
+    '''Intended to be used as a decorator
+    Will add some metadata to the decorated function to hint the Module class to
+    handle it as an action
+    '''
     def wrapped(func):
 
         def call(*args, **kwargs):
             return func(*args, **kwargs)
 
-        call.command_format = format
+        if hasattr(func, Module.FORMAT_MAGIC_ATTR):
+            formats = getattr(func, Module.FORMAT_MAGIC_ATTR)
+            formats.append(format)
+            setattr(call, Module.FORMAT_MAGIC_ATTR, formats)
+        else:
+            setattr(call, Module.FORMAT_MAGIC_ATTR, [format])
         return call
 
     return wrapped
