@@ -10,5 +10,5 @@ class Hello(Module):
 
         await self.send_message(
             message.channel,
-            'Hej @{}'.format(message.author.name)
+            'Hej {}'.format(message.author.mention)
         )
