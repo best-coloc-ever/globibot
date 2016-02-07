@@ -186,7 +186,7 @@ class Dj(Module):
 
     def required_skips(self):
         members = self.voice_channel.voice_members
-        return max(1, len(members) - 1)
+        return int(1 + float(len(members)) / 2)
 
 
     @command('!dj queue')
