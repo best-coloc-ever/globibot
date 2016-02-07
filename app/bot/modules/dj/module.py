@@ -109,7 +109,8 @@ class Dj(Module):
                         yt_link,
                         use_avconv=True,
                         ytdl_options= {
-                            'noplaylist': True
+                            'noplaylist': True,
+                            'ignoreerrors': True
                         }
                     )
                     self.debug(player.url)
