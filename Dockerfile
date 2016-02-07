@@ -6,7 +6,12 @@ RUN pip install \
     tornado \
     parse \
     requests \
-    twitter
+    twitter \
+    youtube_dl
+
+RUN apt-get update -y && apt-get install -y \
+    libopus-dev \
+    libav-tools
 
 WORKDIR /app
 
