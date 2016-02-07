@@ -110,7 +110,9 @@ class Dj(Module):
                         use_avconv=True,
                         ytdl_options= {
                             'noplaylist': True,
-                            'ignoreerrors': True
+                            'ignoreerrors': True,
+                            'prefer_insecure': True,
+                            'nocheckcertificate': True
                         }
                     )
                     self.debug(player.url)
