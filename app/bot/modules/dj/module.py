@@ -104,7 +104,7 @@ class Dj(Module):
                 self.current_player.start()
             else:
                 if self.current_player.is_done():
-                    self.songs.pop()
+                    self.songs.popleft()
                     self.current_player = None
                 else:
                     await asyncio.sleep(2)
