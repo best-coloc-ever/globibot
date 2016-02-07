@@ -18,7 +18,7 @@ def init_globibot(web_app):
         )
 
     bot_modules = [
-        modules.Hello,
+        # modules.Hello,
         modules.Github,
         modules.Twitch,
         modules.Twitter,
