@@ -34,10 +34,16 @@ class Module:
 
         return actions
 
-    async def send_message(self, channel, content):
+    async def send_message(self, channel, content, clear=0):
         self.debug('Sending message: "{}"'.format(content))
 
-        await self.bot.send_message(channel, content)
+        message = await self.bot.send_message(channel, content)
+        if clear:
+            asyncio.ensure_future(self.delete_message(message, clear))
+
+    async def delete_message(self, message, after):
+        await asyncio.sleep(after)
+        await self.bot.delete_message(message)
 
     async def send_file(self, channel, file_path):
         self.debug('Sending file: "{}"'.format(file_path))
