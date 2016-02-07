@@ -55,7 +55,7 @@ class EmoteStore:
         for emote in data['emotes']:
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
                 url = template.replace('{{id}}', emote['id']).replace('{{image}}', bttv_size)
-                self.url_store[emote['code']][size] = url
+                self.url_store[emote['code']][size] = 'http:{}'.format(url)
 
     def get(self, emote_name, size):
         # Already downloaded ?
@@ -69,7 +69,7 @@ class EmoteStore:
             return None
 
         # Download and save it
-        temp_file, _ = urlretrieve('http:{}'.format(emote_url))
+        temp_file, _ = urlretrieve(emote_url)
         ext = image_type(temp_file)
         file_name = '{}.{}'.format(temp_file, ext)
         os.rename(temp_file, file_name)
