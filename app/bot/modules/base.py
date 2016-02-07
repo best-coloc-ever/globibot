@@ -18,8 +18,7 @@ class Module:
         for format, command in self.actions:
             parsed = parse(format, message.content)
             if parsed:
-                future = command(self, message, **parsed.named)
-                asyncio.ensure_future(future)
+                await command(self, message, **parsed.named)
 
     async def respond(self, content):
         await self.bot.client.send_message(self.last_message.channel, content)
