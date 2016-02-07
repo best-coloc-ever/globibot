@@ -2,6 +2,9 @@ from inspect import getmembers, isfunction
 
 from parse import parse
 
+from .logging import logger
+import logging
+
 import asyncio
 
 class Module:
@@ -38,6 +41,26 @@ class Module:
 
 def command(format):
 
+    def log(self, level, message):
+        extra = {
+            'module_name': self.__class__.__name__
+        }
+        logger.log(level, message, extra=extra)
+
+    def debug(self, message):
+        self.log(logging.DEBUG, message)
+
+    def info(self, message):
+        self.log(logging.INFO, message)
+
+    def warning(self, message):
+        self.log(logging.WARNING, message)
+
+    def error(self, message):
+        self.log(logging.ERROR, message)
+
+    def critical(self, message):
+        self.log(logging.CRITICAL, message)
     def wrapped(func):
 
         def call(*args, **kwargs):
