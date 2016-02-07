@@ -4,26 +4,25 @@ from utils.logging import logger
 
 import asyncio
 
-class Globibot:
+class Globibot(DiscordClient):
 
-    def __init__(self, web_app, module_classes, *credentials):
+    def __init__(self, web, module_classes, *credentials):
+        super().__init__()
+
         self.web_app = web_app
         self.modules = list(map(lambda cls: cls(self), module_classes))
         self.credentials = credentials
 
-        self.client = DiscordClient()
-        self.client.on_ready = self.on_ready
-        self.client.on_message = self.on_message
 
     async def boot(self):
-        await self.client.start(*self.credentials)
+        await self.start(*self.credentials)
 
     async def shutdown(self):
-        await self.client.logout()
+        await self.logout()
 
     async def on_ready(self):
         logger.info('Globibot is online')
-        logger.info('Detected {} discord servers'.format(len(self.client.servers)))
+        logger.info('Operating on {} discord servers'.format(len(self.servers)))
 
     async def on_message(self, message):
         for module in self.modules:
