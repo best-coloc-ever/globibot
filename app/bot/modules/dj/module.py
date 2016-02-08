@@ -254,10 +254,19 @@ class Dj(Module):
         while True:
             if self.current_player is None:
                 self.info('Waiting for next song...')
-                player = await self.queue.get()
+                old_player = await self.queue.get()
+                self.current_player = await self.voice.create_ytdl_player(
+                    old_player.url,
+                    use_avconv=True,
+                    ytdl_options= {
+                        'noplaylist': True,
+                        'ignoreerrors': True,
+                        'prefer_insecure': True,
+                        'nocheckcertificate': True
+                    }
+                )
                 self.info('Next song playing')
                 self.song_start_time = time.time()
-                self.current_player = player
                 self.current_player.start()
                 self.skips.clear()
 
@@ -266,7 +275,7 @@ class Dj(Module):
                     message.channel,
                     '{} your song: {} is now playing'.format(
                         message.author.mention,
-                        player.title
+                        self.current_player.title
                     ),
                     c.CLEAR_INTERVAL
                 )
