@@ -3,7 +3,7 @@ from .discord import master_id, EMOTES
 
 FORMAT_MAGIC_ATTR = 'command_formats'
 
-def command(format, pre_hook=lambda: None):
+def command(format, pre_hook=lambda m: None):
     '''Intended to be used as a decorator
     Will add some metadata to the decorated function to hint the Module class to
     handle it as an action
