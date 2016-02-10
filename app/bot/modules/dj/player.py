@@ -59,7 +59,7 @@ class Player:
         duration = sum(song.duration for song in self.queue)
         if self.current_song:
             duration += (self.current_song.duration - self.progress)
-        return 0
+        return duration
 
     async def run_forever(self):
         while True:

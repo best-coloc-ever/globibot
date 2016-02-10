@@ -114,7 +114,7 @@ class Dj(Module):
                 message.author.mention,
                 song.formatted(),
                 EMOTES.LirikChamp,
-                t.format_seconds(max(self.player.queue_duration - song.duration, 0))
+                t.format_seconds(self.player.queue_duration)
             ),
             c.CLEAR_INTERVAL
         )
@@ -139,7 +139,7 @@ class Dj(Module):
         if self.invoked_channel is None:
             raise NotInvoked
         if self.invoked_channel != message.channel:
-            raise WrongChannel
+            raise WrongChannel(message.channel)
 
     def ensure_listening(self, message):
         pass

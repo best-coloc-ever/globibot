@@ -11,6 +11,9 @@ class SongQueue(deque):
     def formatted(self):
         message = str()
         for i, song in enumerate(self):
+            if i >= 10:
+                message += '... and more'
+                break
             message += '[{}] -- {} added by {}\n'.format(
                 i + 1,
                 song.formatted(),
@@ -22,7 +25,8 @@ class SongQueue(deque):
 class RandomQueue(SongQueue):
 
     def formatted(self):
-        return '**{} backup song{}**'.format(
+        header = '**{} backup song{}**'.format(
             len(self),
             '' if len(self) == 1 else 's'
         )
+        return '{}\n{}'.format(header, super().formatted())
