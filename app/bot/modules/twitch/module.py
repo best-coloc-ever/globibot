@@ -1,4 +1,4 @@
-from ..base import Module, command
+from ..base import Module, command, master_only
 
 from .emote_store import EmoteStore
 
@@ -17,17 +17,28 @@ class Twitch(Module):
             len(self.emote_store.url_store))
         )
 
-    @command('!emote enable')
+    @command('!emote enable', master_only)
     async def enable_emotes(self, message):
+        self.debug(
+            'Enabling emotes in {}#{}'.format(message.server, message.channel)
+        )
+
         self.emote_enabled_channels.add(message.channel)
 
         await self.send_message(
             message.channel,
-            '`Twitch emotes` are now **enabled** in this channel'
+            (
+                '`Twitch emotes` are now **enabled** in this channel\n'
+                'size is set to `{}`'
+            ).format(self.emote_sizes[message.channel])
         )
 
-    @command('!emote disable')
+    @command('!emote disable', master_only)
     async def disable_emotes(self, message):
+        self.debug(
+            'Disabling emotes in {}#{}'.format(message.server, message.channel)
+        )
+
         self.emote_enabled_channels.discard(message.channel)
 
         await self.send_message(
@@ -35,7 +46,7 @@ class Twitch(Module):
             '`Twitch emotes` are now **disabled** in this channel'
         )
 
-    @command('!emote size {size:w}')
+    @command('!emote size {size:w}', master_only)
     async def change_emote_size(self, message, size):
         channel = message.channel
         size = size.lower()
