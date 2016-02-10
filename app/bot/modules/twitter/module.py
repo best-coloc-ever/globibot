@@ -1,4 +1,4 @@
-from ..base import Module, command
+from ..base import Module, command, master_only
 from . import constants as c
 
 from twitter import Twitter as TwitterAPI
@@ -48,7 +48,7 @@ class Twitter(Module):
                     format_tweet(tweets[0])
                 )
 
-    @command('!twitter monitor {name:w}')
+    @command('!twitter monitor {name:w}', master_only)
     async def monitor_user(self, message, name):
         channel = message.channel
 
@@ -72,7 +72,7 @@ class Twitter(Module):
                     'Now monitoring `{}` tweets in this channel'.format(name)
                 )
 
-    @command('!twitter unmonitor {name:w}')
+    @command('!twitter unmonitor {name:w}', master_only)
     async def unmonitor_user(self, message, name):
         self.streams[name].discard(message.channel)
 
