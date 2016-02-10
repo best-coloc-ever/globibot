@@ -64,6 +64,7 @@ class Twitch(Module):
             )
 
     @command('!{emote_name:w}')
+    @command('!<:{emote_name:w}:{:d}>')
     async def display_emote(self, message, emote_name):
         channel = message.channel
 
