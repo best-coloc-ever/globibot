@@ -30,6 +30,11 @@ class Module:
                 future = self.invoke_command(command, message, **parsed.named)
                 asyncio.ensure_future(future)
 
+        self.on_message(message)
+
+    def on_message(self, message):
+        pass
+
     async def send_message(self, channel, content, clear=0):
         self.debug('Sending message: "{}"'.format(content))
 
