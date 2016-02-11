@@ -1,5 +1,7 @@
 from ..base import Module, command, ModuleException, master_only
 
+import asyncio
+
 class HelloError(ModuleException):
 
     def error(self, message):
@@ -27,5 +29,17 @@ class Hello(Module):
         error
 
     @command('Master', master_only)
-    async def master_only(self, message):
+    async def master_only_cmd(self, message):
         await self.send_message(message.channel, 'Hi')
+
+    @command('Async', master_only)
+    async def async_cmd(self, message):
+
+        async def async_crash():
+            await asyncio.sleep(5)
+            raise Exception('Crashed :(')
+
+        self.run_async(
+            async_crash(),
+            message.channel
+        )
