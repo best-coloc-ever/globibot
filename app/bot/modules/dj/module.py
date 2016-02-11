@@ -3,12 +3,11 @@ from ..base import Module, command, master_only, EMOTES
 from .errors import *
 from .player import Player
 from .queue import SongQueue, RandomQueue
+from .queue_display import QueueDisplay
 from .song import Song
 
 from . import constants as c
 from . import tools as t
-
-import asyncio
 
 class Dj(Module):
 
@@ -23,11 +22,11 @@ class Dj(Module):
         self.backup_queue = RandomQueue()
         self.player = Player(self, self.queue, self.backup_queue)
 
-        self.show_queue = False
-        self.queue_message = None
-        self.refresh_queue = False
+        self.queue_display = QueueDisplay(self)
 
-        asyncio.ensure_future(self.display_queue())
+    def on_message(self, message):
+        if message.channel == self.invoked_channel:
+            self.queue_display.pull_down()
 
     @command('!dj join {channel_name}', master_only)
     async def join_room(self, message, channel_name):
@@ -50,8 +49,17 @@ class Dj(Module):
         self.voice_channel = voice_channel
         self.voice = voice
         # Start playing
+        self.run_async(
+            self.player.run_forever(),
+            self.invoked_channel
+        )
         self.player.play()
-
+        # Enable queue display
+        self.run_async(
+            self.queue_display.run(),
+            self.invoked_channel
+        )
+        # Notifying success
         await self.send_message(
             message.channel,
             (
@@ -89,7 +97,7 @@ class Dj(Module):
     async def toggle_queue(self, message):
         self.ensure_channel(message)
         # Toggling the queue display
-        self.show_queue = not self.show_queue
+        self.queue_display.toggle()
 
     @command('!dj play {song_link}')
     async def play_song(self, message, song_link):
@@ -120,7 +128,6 @@ class Dj(Module):
         )
         # Queuing it
         self.queue.append(song)
-        self.refresh_queue = True
 
 
     @command('!dj skip')
@@ -158,42 +165,3 @@ class Dj(Module):
                 exception
             )
         )
-
-    def queue_formatted(self):
-        queue = self.queue if len(self.queue) else self.backup_queue
-        return (
-            '{}\n'
-            '\n'
-            '\n'
-            '{}'
-        ).format(
-            self.player.formatted(),
-            queue.formatted()
-        )
-
-    async def display_queue(self):
-        while True:
-            if self.show_queue:
-                if self.refresh_queue:
-                    self.refresh_queue = False
-                    if self.queue_message:
-                        await self.bot.delete_message(self.queue_message)
-                        self.queue_message = None
-
-                message = self.queue_formatted()
-                if self.queue_message is None:
-                    self.queue_message = await self.send_message(
-                        self.invoked_channel,
-                        message
-                    )
-                else:
-                    await self.bot.edit_message(
-                        self.queue_message,
-                        message
-                    )
-            else:
-                if self.queue_message:
-                    await self.bot.delete_message(self.queue_message)
-                    self.queue_message = None
-
-            await asyncio.sleep(2.5)

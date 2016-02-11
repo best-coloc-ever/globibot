@@ -22,8 +22,6 @@ class Player:
 
         self._init_opus()
 
-        asyncio.ensure_future(self.run_forever())
-
     def play(self):
         self.running = True
 
