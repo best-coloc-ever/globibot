@@ -19,6 +19,24 @@ def unexpected_error_str(message, tb):
 
     return string.format(**context)
 
+def unexpected_async_error_str(tb):
+    context = {
+        'sad': EMOTES.LirikFeels,
+        'master': master,
+        'heart': EMOTES.LirikH,
+        'error': tb
+    }
+
+    string = (
+        'Something asynchronous broke {sad}\n'
+        'Please notify my master {master} of the following error {heart}:\n'
+        '```python\n'
+        '{error}\n'
+        '```'
+    )
+
+    return string.format(**context)
+
 
 class ModuleException(Exception):
 

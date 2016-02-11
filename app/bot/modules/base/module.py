@@ -1,6 +1,6 @@
 from .command import FORMAT_MAGIC_ATTR
 from .logging import logger
-from .errors import ModuleException, unexpected_error_str
+from .errors import ModuleException, unexpected_error_str, unexpected_async_error_str
 
 from traceback import format_exc
 from functools import partial
@@ -82,3 +82,14 @@ class Module:
                     actions.append(action)
 
         return actions
+
+    def run_async(self, future, report_channel):
+
+        async def run():
+            try:
+                await future
+            except Exception:
+                error_str = unexpected_async_error_str(format_exc(10))
+                await self.send_message(report_channel, error_str)
+
+        asyncio.ensure_future(run())
