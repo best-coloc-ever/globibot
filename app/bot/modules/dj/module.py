@@ -107,7 +107,7 @@ class Dj(Module):
             raise TooManyQueuedForUser
         song = Song(song_link, message)
         # Song duration
-        if song.duration > c.MAX_VIDEO_DURATION:
+        if song.duration >= c.MAX_VIDEO_DURATION:
             raise VideoTooLong
         # Uniqueness
         if song in self.queue or song == self.player.current_song:
