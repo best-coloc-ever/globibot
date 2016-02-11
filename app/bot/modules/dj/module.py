@@ -129,8 +129,7 @@ class Dj(Module):
         # Queuing it
         self.queue.append(song)
 
-
-    @command('!dj skip')
+    @command('!dj skip', master_only)
     async def skip_song(self, message):
         self.ensure_channel(message)
         self.ensure_listening(message)
