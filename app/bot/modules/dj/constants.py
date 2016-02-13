@@ -6,7 +6,7 @@ MAX_VIDEO_DURATION = 600 # Seconds
 CLEAR_INTERVAL = 30 # Seconds
 MAX_VIDEO_PER_USER = 2
 
-QUEUE_REFRESH_TIME = 3 # seconds
+QUEUE_REFRESH_TIME = 5 # seconds
 
 YTDL_OPTIONS = {
     'noplaylist': True,
