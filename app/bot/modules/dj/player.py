@@ -95,6 +95,9 @@ class Player:
         await self.play_song(song)
 
     async def play_song(self, song):
+        self.module.skips.clear()
+        self.module.blacklist.clear()
+
         try:
             player = await self.module.voice.create_ytdl_player(
                 song.link,

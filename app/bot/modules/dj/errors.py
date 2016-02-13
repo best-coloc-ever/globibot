@@ -43,7 +43,7 @@ class NotListening(ModuleException):
     def error(self, message):
         return (
             '{} You can\'t do that {}\n'
-            'You\'re not even listening to me {}\n',
+            'You\'re not even listening to me {}\n'
         ).format(
             message.author.mention,
             EMOTES.LirikNot,
@@ -145,6 +145,16 @@ class AlreadyQueued(ModuleException):
     def error(self, message):
         return (
             '{} This song is already queued {}'
+        ).format(
+            message.author.mention,
+            EMOTES.LirikNot
+        )
+
+class BlacklistedSong(ModuleException):
+
+    def error(self, message):
+        return (
+            '{} The people have spoken and this song is blacklisted {}'
         ).format(
             message.author.mention,
             EMOTES.LirikNot

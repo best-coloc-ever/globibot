@@ -26,6 +26,10 @@ class Dj(Module):
 
         self.queue_display = None
 
+        self.skips = set()
+        self.blacklist = set()
+        self.blacklisted_songs = set()
+
     def on_message(self, message):
         if self.queue_display and message.channel == self.invoked_channel:
             self.queue_display.pull_down()
@@ -97,12 +101,15 @@ class Dj(Module):
         self.queue_display.toggle()
 
     @command('!dj play {song_link}')
+    @command('!dj add {song_link}')
     async def play_song(self, message, song_link):
         self.ensure_channel(message)
         # Queue limit
         if len(self.queue.user_songs(message.author.id)) > c.MAX_VIDEO_PER_USER:
             raise TooManyQueuedForUser
         song = Song(song_link, message)
+        if song in self.blacklisted_songs:
+            raise BlacklistedSong
         # Song duration
         if song.duration >= c.MAX_VIDEO_DURATION:
             raise VideoTooLong
@@ -126,17 +133,64 @@ class Dj(Module):
         # Queuing it
         self.queue.append(song)
 
-    @command('!dj skip', master_only)
+    @command('!dj skip')
     async def skip_song(self, message):
         self.ensure_channel(message)
         self.ensure_listening(message)
-        self.player.skip()
+
+        if message.author.id not in self.skips:
+            self.skips.add(message.author.id)
+            if len(self.skips) >= self.required_skips:
+                await self.send_message(
+                    self.invoked_channel,
+                    'Skip vote passed {}'.format(EMOTES.LirikDj)
+                )
+                self.player.skip()
+            else:
+                await self.send_message(
+                    message.channel,
+                    '{} I hear you! {} more skips required'.format(
+                        message.author.mention,
+                        self.required_skips - len(self.skips)
+                    )
+                )
+
+    @property
+    def required_skips(self):
+        listener_count = len(self.voice_channel.voice_members) - 1 # Not counting the bot
+        return min(
+            listener_count,
+            max(2, listener_count - 2 - int(listener_count / 4) - int(listener_count / 7))
+        )
 
     @command('!dj blacklist')
     async def blacklist_song(self, message):
-        raise NotImplemented
-        # self.ensure_channel(message)
-        # self.ensure_listening(message)
+        self.ensure_channel(message)
+        self.ensure_listening(message)
+
+        if message.author.id not in self.blacklist:
+            self.blacklist.add(message.author.id)
+            if len(self.blacklist) >= self.required_skips:
+                song = self.player.current_song
+                self.blacklisted_songs.add(song)
+                self.queue.discard(song)
+                self.backup_queue.discard(song)
+                await self.send_message(
+                    self.invoked_channel,
+                    'Blacklist vote passed for **{}**'.format(
+                        song
+                    )
+                )
+                self.player.skip()
+            else:
+                await self.send_message(
+                    message.channel,
+                    '{} I hear you! {} more blacklist required'.format(
+                        message.author.mention,
+                        self.required_skips - len(self.blacklist)
+                    )
+                )
+
 
     def ensure_channel(self, message):
         if self.invoked_channel is None:
@@ -145,7 +199,8 @@ class Dj(Module):
             raise WrongChannel(message.channel)
 
     def ensure_listening(self, message):
-        pass
+        if message.author not in self.voice_channel.voice_members:
+            raise NotListening
 
     async def play_error(self, song, exception):
         await self.send_message(

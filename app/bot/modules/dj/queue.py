@@ -28,6 +28,11 @@ class SongQueue(deque):
             who=song.message.author.name
         )
 
+    def discard(self, value):
+        try:
+            self.remove(value)
+        except ValueError:
+            pass
 
 class RandomQueue(SongQueue):
 
