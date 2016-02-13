@@ -71,6 +71,7 @@ class Dj(Module):
                 EMOTES.LirikGood
             )
         )
+        self.run_async(self.watch_kicks(), self.invoked_channel)
 
     @command('!dj retire', master_only)
     async def retire(self, message):
@@ -164,3 +165,19 @@ class Dj(Module):
                 exception
             )
         )
+
+    async def watch_kicks(self):
+        while self.voice_channel:
+            if self.bot.user not in self.voice_channel.voice_members:
+                await self.send_message(
+                    self.invoked_channel,
+                    (
+                        'It appears that I have been kicked or moved '
+                        'against my will {}'
+                    ).format(
+                        EMOTES.LirikFeels
+                    )
+                )
+                break
+
+            await asyncio.sleep(10)
