@@ -3,7 +3,6 @@ from youtube_dl import YoutubeDL
 from .errors import YTDLExtractInfosError
 
 from . import constants as c
-from . import tools as t
 
 class Song:
 
@@ -27,16 +26,8 @@ class Song:
         except Exception as e:
             raise YTDLExtractInfosError(e)
 
-    def formatted(self):
-        return (
-            '**{}** (`{}`) [`{}` **views** / `{}` 👍 / `{}` 👎]'
-        ).format(
-            self.title,
-            t.format_seconds(self.duration),
-            self.views,
-            self.likes,
-            self.dislikes
-        )
+    def __str__(self):
+        return self.title
 
     def __eq__(self, other):
         if isinstance(other, Song):

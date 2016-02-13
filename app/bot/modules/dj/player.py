@@ -10,10 +10,10 @@ import asyncio
 
 class Player:
 
-    def __init__(self, module, queue, backup):
+    def __init__(self, module):
         self.module = module
-        self.queue = queue
-        self.backup = backup
+        self.queue = module.queue
+        self.backup = module.backup_queue
 
         self.current_song = None
         self.current_player = None
@@ -24,9 +24,12 @@ class Player:
 
     def play(self):
         self.running = True
+        self.module.run_async(
+            self.run_forever(),
+            self.module.invoked_channel
+        )
 
     def stop(self):
-        self.skip()
         self.running = False
 
     def skip(self):
@@ -34,19 +37,29 @@ class Player:
         self.current_player = None
         self.current_song = None
 
-    def formatted(self):
-        message = str()
+    def __str__(self):
         if self.current_song:
-            message += '{dj}    ▶ `{progress}`  {song}    {dj}'.format(
+            return (
+                '{dj} 🎵   *Now playing*   🎵{dj}\n'
+                '--------------------------------------------------\n'
+                '**{song}**   [`{views:,}` 👀  |  `{likes:,}` 👍  |  `{dislikes:,}` 👎]\n'
+                '*Added by {who}*\n'
+                '--------------------------------------------------\n'
+                '▶ `{progress}` ▶'
+            ).format(
                 dj=EMOTES.LirikDj,
-                song=self.current_song.formatted(),
+                song=self.current_song,
+                views=self.current_song.views,
+                likes=self.current_song.likes,
+                dislikes=self.current_song.dislikes,
+                who=self.current_song.message.author.mention,
                 progress='[{} / {}]'.format(
                     t.format_seconds(self.progress),
                     t.format_seconds(self.current_song.duration)
                 )
             )
 
-        return message
+        return str()
 
     @property
     def progress(self):
@@ -60,10 +73,9 @@ class Player:
         return duration
 
     async def run_forever(self):
-        while True:
-            if self.running:
-                if self.current_player is None or self.current_player.is_done():
-                    await self.play_next()
+        while self.running:
+            if self.current_player is None or self.current_player.is_done():
+                await self.play_next()
 
             await asyncio.sleep(1)
 

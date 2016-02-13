@@ -9,6 +9,8 @@ from .song import Song
 from . import constants as c
 from . import tools as t
 
+import asyncio
+
 class Dj(Module):
 
     def __init__(self, *args, **kwargs):
@@ -20,18 +22,18 @@ class Dj(Module):
 
         self.queue = SongQueue()
         self.backup_queue = RandomQueue()
-        self.player = Player(self, self.queue, self.backup_queue)
+        self.player = Player(self)
 
-        self.queue_display = QueueDisplay(self)
+        self.queue_display = None
 
     def on_message(self, message):
-        if message.channel == self.invoked_channel:
+        if self.queue_display and message.channel == self.invoked_channel:
             self.queue_display.pull_down()
 
     @command('!dj join {channel_name}', master_only)
     async def join_room(self, message, channel_name):
         if self.invoked_channel:
-            raise AlreadyInvoked(self.invoked_channel)
+            raise AlreadyInvoked(self.voice_channel)
         # Finding channel by name in the current server
         voice_channel = self.bot.find_voice_channel(
             channel_name,
@@ -49,16 +51,7 @@ class Dj(Module):
         self.voice_channel = voice_channel
         self.voice = voice
         # Start playing
-        self.run_async(
-            self.player.run_forever(),
-            self.invoked_channel
-        )
         self.player.play()
-        # Enable queue display
-        self.run_async(
-            self.queue_display.run(),
-            self.invoked_channel
-        )
         # Notifying success
         await self.send_message(
             message.channel,
@@ -71,6 +64,8 @@ class Dj(Module):
                 EMOTES.LirikGood
             )
         )
+        # Enable queue display
+        self.queue_display = QueueDisplay(self, self.invoked_channel)
         self.run_async(self.watch_kicks(), self.invoked_channel)
 
     @command('!dj retire', master_only)
@@ -88,6 +83,7 @@ class Dj(Module):
         self.voice = None
 
         self.queue.clear()
+        self.queue_display.disable()
 
         await self.send_message(
             message.channel,
@@ -121,7 +117,7 @@ class Dj(Module):
                 'It will be played in `{}`'
             ).format(
                 message.author.mention,
-                song.formatted(),
+                song,
                 EMOTES.LirikChamp,
                 t.format_seconds(self.player.queue_duration)
             ),

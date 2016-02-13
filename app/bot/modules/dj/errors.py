@@ -18,7 +18,7 @@ class AlreadyInvoked(ModuleException):
 
     def error(self, message):
         return (
-            '{} I\'m already playing in another voice channel: {}'
+            '{} I\'m already playing in the voice channel: `{}`'
         ).format(
             message.author.mention,
             self.channel

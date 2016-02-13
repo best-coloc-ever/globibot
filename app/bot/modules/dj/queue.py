@@ -1,3 +1,5 @@
+from . import tools as t
+
 from collections import deque
 
 class SongQueue(deque):
@@ -8,25 +10,33 @@ class SongQueue(deque):
             self
         ))
 
-    def formatted(self):
-        message = str()
-        for i, song in enumerate(self):
-            if i >= 10:
-                message += '... and more'
-                break
-            message += '[{}] -- {} added by {}\n'.format(
-                i + 1,
-                song.formatted(),
-                song.message.author.mention
-            )
-        return message
+    def __str__(self):
+        if len(self) == 0:
+            return 'No queue'
+        else:
+            s = '\n------------- **CURRENT QUEUE** -------------\n\n'
+            songs = [self.song_str(song, i + 1) for i, song in enumerate(list(self)[:9])]
+            s += '\n'.join(songs)
+            if len(self) > 10:
+                s += '\n... and {} more'.format(len(self) - 9)
+            return s
+
+    def song_str(self, song, pos):
+        return '{pos}\t{song:80}\tAdded by {who}'.format(
+            pos=t.format_kewl_number(pos),
+            song=t.elided(str(song), 80),
+            who=song.message.author.name
+        )
 
 
 class RandomQueue(SongQueue):
 
-    def formatted(self):
-        header = '**{} backup song{}**'.format(
-            len(self),
-            '' if len(self) == 1 else 's'
+    def __str__(self):
+        return (
+            '--------------------------------------------------\n'
+            '⚠ *No song in queue* ⚠\n'
+            '*Playing songs from the past*\n'
+            '{}'
+        ).format(
+            super().__str__()
         )
-        return '{}\n{}'.format(header, super().formatted())
