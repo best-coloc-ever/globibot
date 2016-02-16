@@ -102,7 +102,7 @@ class Twitter(Module):
             return None
 
     async def read_stream(self, name, user, channel):
-        stream =  TwitterStream(auth=self.oauth, block=False)
+        stream =  TwitterStream(auth=self.oauth, timeout=0.1)
         iterator = stream.statuses.filter(follow=user['id'])
 
         for tweet in iterator:
