@@ -196,7 +196,7 @@ class Dj(Module):
         if self.invoked_channel is None:
             raise NotInvoked
         if self.invoked_channel != message.channel:
-            raise WrongChannel(message.channel)
+            raise WrongChannel(self.invoked_channel)
 
     def ensure_listening(self, message):
         if message.author not in self.voice_channel.voice_members:
