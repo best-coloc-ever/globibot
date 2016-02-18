@@ -107,6 +107,7 @@ class Player:
             player.start()
         except Exception as e:
             await self.module.play_error(song, e)
+            return
 
         self.started_at = time()
         self.current_song = song

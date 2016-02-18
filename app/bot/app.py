@@ -22,7 +22,7 @@ def init_globibot(web_app):
         modules.Github,
         modules.Twitch,
         modules.Twitter,
-        modules.Dj
+        modules.Dj,
         modules.Giveaway,
     ]
 
