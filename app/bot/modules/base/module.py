@@ -98,6 +98,9 @@ class Module:
                 await future
             except Exception:
                 error_str = unexpected_async_error_str(format_exc(10))
-                await self.send_message(report_channel, error_str)
+                if report_channel:
+                    await self.send_message(report_channel, error_str)
+                else:
+                    self.error(error_str)
 
         asyncio.ensure_future(run())
