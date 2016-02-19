@@ -63,8 +63,8 @@ class Twitch(Module):
                 'Emotes are now `{}`'.format(size)
             )
 
-    @command('!{emote_name:w}')
-    @command('!<:{emote_name:w}:{:d}>')
+    @command('!{emote_name:S}')
+    @command('!<:{emote_name:S}:{:d}>')
     async def display_emote(self, message, emote_name):
         channel = message.channel
 

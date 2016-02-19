@@ -57,6 +57,17 @@ class EmoteStore:
                                    .replace('{{image}}', bttv_size)
                 self.url_store[emote['code']][size] = 'http:{}'.format(location)
 
+        # Special BTTV
+        URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_bttv.json'
+        response = requests.get(URL)
+        for emote_name, emote_id in response.json().items():
+            if emote_name == '(ditto)':
+                print('LOL')
+            for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
+                location = template.replace('{{id}}', emote_id)\
+                                   .replace('{{image}}', bttv_size)
+                self.url_store[emote_name][size] = 'http:{}'.format(location)
+
     def get(self, emote_name, size):
         # Already downloaded ?
         file_name = self.file_store[emote_name].get(size)
