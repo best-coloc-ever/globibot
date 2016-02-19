@@ -74,3 +74,13 @@ class Twitch(Module):
             if emote_file:
                 await self.send_file(channel, emote_file)
 
+    @command('!emote reload', master_only)
+    async def reload_emotes(self, message):
+        self.emote_store = EmoteStore()
+
+        await self.send_message(
+            message.channel,
+            'loaded {} twitch emotes'.format(
+                len(self.emote_store.url_store)
+            )
+        )
