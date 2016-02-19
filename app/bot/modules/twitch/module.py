@@ -9,7 +9,7 @@ class Twitch(Module):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.emote_enabled_channels = set()
+        self.emote_disabled_channels = set()
         self.emote_store = EmoteStore()
         self.emote_sizes = defaultdict(lambda: EmoteStore.MEDIUM)
 
@@ -23,7 +23,7 @@ class Twitch(Module):
             'Enabling emotes in {}#{}'.format(message.server, message.channel)
         )
 
-        self.emote_enabled_channels.add(message.channel)
+        self.emote_disabled_channels.discard(message.channel)
 
         await self.send_message(
             message.channel,
@@ -39,7 +39,7 @@ class Twitch(Module):
             'Disabling emotes in {}#{}'.format(message.server, message.channel)
         )
 
-        self.emote_enabled_channels.discard(message.channel)
+        self.emote_disabled_channels.add(message.channel)
 
         await self.send_message(
             message.channel,
@@ -68,7 +68,7 @@ class Twitch(Module):
     async def display_emote(self, message, emote_name):
         channel = message.channel
 
-        if channel in self.emote_enabled_channels:
+        if channel not in self.emote_disabled_channels:
             size = self.emote_sizes[channel]
             emote_file = self.emote_store.get(emote_name, size)
             if emote_file:
