@@ -1,6 +1,7 @@
 from ..base import Module, command, master_only
 
 from .emote_store import EmoteStore
+from .kappa import Kappa
 
 from collections import defaultdict
 
@@ -11,11 +12,42 @@ class Twitch(Module):
 
         self.emote_disabled_channels = set()
         self.emote_store = EmoteStore()
-        self.emote_sizes = defaultdict(lambda: EmoteStore.MEDIUM)
+        self.emote_sizes = defaultdict(lambda: EmoteStore.LARGE)
+
+        self.kappa = Kappa(self.emote_store, self.send_message, self.send_file)
+        self.kappa_mode = False
 
         self.info('loaded {} twitch emotes'.format(
             len(self.emote_store.url_store))
         )
+
+    @command('!emote Kappa on', master_only)
+    async def enable_kappa_mode(self, message):
+        self.kappa_mode = True
+
+        await self.send_message(
+            message.channel,
+            'Kappa mode is `enabled` for emotes'
+        )
+
+    @command('!emote Kappa off', master_only)
+    async def disable_kappa_mode(self, message):
+        self.kappa_mode = False
+
+        await self.send_message(
+            message.channel,
+            'Kappa mode is `disabled` for emotes'
+        )
+
+    @command('!emote Kappa level {level:f}')
+    async def set_kappa_level(self, message, level):
+        if level >= 0. and level <= 1.0:
+            self.kappa.level = level
+
+            await self.send_message(
+                message.channel,
+                'Kappa mode is at `{}` %'.format(level * 100)
+            )
 
     @command('!emote enable', master_only)
     async def enable_emotes(self, message):
@@ -70,13 +102,17 @@ class Twitch(Module):
 
         if channel not in self.emote_disabled_channels:
             size = self.emote_sizes[channel]
-            emote_file = self.emote_store.get(emote_name, size)
-            if emote_file:
-                await self.send_file(channel, emote_file)
+            if self.kappa_mode:
+                await self.kappa.reply_to_emote(message, emote_name, size)
+            else:
+                emote_file = self.emote_store.get(emote_name, size)
+                if emote_file:
+                    await self.send_file(channel, emote_file)
 
     @command('!emote reload', master_only)
     async def reload_emotes(self, message):
         self.emote_store = EmoteStore()
+        self.kappa.emote_store = self.emote_store
 
         await self.send_message(
             message.channel,

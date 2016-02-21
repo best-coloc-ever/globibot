@@ -8,6 +8,7 @@ class EMOTES:
     LirikDj = '<:lirikDJ:141625905805131776>'
     LirikChamp = '<:lirikCHAMP:141625908011204608>'
     LirikF = '<:lirikF:141625910460809216>'
+    LirikPuke = '<:lirikPuke:150378556071870464>'
 
 master_id = getenv('MASTER_ID')
 master = '<@{id}>'.format(id=master_id)
