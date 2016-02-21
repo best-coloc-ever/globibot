@@ -10,7 +10,6 @@ import random
 
 class Giveaway(Module):
 
-    GIVEAWAY_NOTIFY_INTERVAL = 15 # seconds
     GIVEAWAY_TIME = 90 # seconds
 
     class Item:
@@ -146,11 +145,23 @@ class Giveaway(Module):
 
         self.participants.add(message.author)
 
+        await self.send_message(
+            message.channel,
+            (
+                '**{}** participants have joined the giveaway so far!\n'
+                '`{} seconds` left to join with `!giveaway join`!'
+            ).format(
+                len(self.participants),
+                int(Giveaway.GIVEAWAY_TIME - (time() - self.giveaway_start))
+            ),
+            15
+        )
+
     async def run_giveaway(self, channel, who, item):
         await self.send_message(
             channel,
             (
-                '{} wants to giveaway a `{}`\n'
+                '{} wants to giveaway `{}`\n'
                 'Type `!giveaway join` to participate to the giveaway!\n'
                 'The winner will be chosen randomly in {} seconds'
             ).format(
@@ -158,11 +169,6 @@ class Giveaway(Module):
                 item.description if item.description else 'No description',
                 Giveaway.GIVEAWAY_TIME
             )
-        )
-
-        self.run_async(
-            self.notify_participants(channel),
-            channel
         )
 
         await asyncio.sleep(Giveaway.GIVEAWAY_TIME)
@@ -196,7 +202,7 @@ class Giveaway(Module):
         await self.send_message(
             channel,
             (
-                'Congratulations to {} for winning the giveaway (1/{})!\n'
+                'Congratulations to {} for winning the giveaway (1 in {} chance)!\n'
                 'Thank you {} for your generosity {}'
             ).format(
                 winner.mention,
@@ -205,21 +211,3 @@ class Giveaway(Module):
                 EMOTES.LirikH
             )
         )
-
-    async def notify_participants(self, channel):
-        while True:
-            await asyncio.sleep(Giveaway.GIVEAWAY_NOTIFY_INTERVAL)
-            if self.giveaway_channel is None:
-                break
-
-            await self.send_message(
-                channel,
-                (
-                    '**{}** participants have joined the giveaway so far!\n'
-                    '`{} seconds` left to join!'
-                ).format(
-                    len(self.participants),
-                    int(Giveaway.GIVEAWAY_TIME - (time() - self.giveaway_start))
-                ),
-                30
-            )
