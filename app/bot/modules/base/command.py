@@ -1,9 +1,11 @@
 from .errors import ModuleException
-from .discord import master_id, EMOTES
+from .discord import EMOTES
+
+from .constants import MASTER_IDS_KEY
 
 FORMAT_MAGIC_ATTR = 'command_formats'
 
-def command(format, pre_hook=lambda m: None):
+def command(format, pre_hook=lambda b, m: None):
     '''Intended to be used as a decorator
     Will add some metadata to the decorated function to hint the Module class to
     handle it as an action
@@ -11,7 +13,7 @@ def command(format, pre_hook=lambda m: None):
     def wrapped(func):
 
         def call(module, message, *args, **kwargs):
-            pre_hook(message)
+            pre_hook(module.bot, message)
             return func(module, message, *args, **kwargs)
 
         if hasattr(func, FORMAT_MAGIC_ATTR):
@@ -32,6 +34,8 @@ class NotMasterError(ModuleException):
             EMOTES.LirikNot
         )
 
-def master_only(message):
-    if message.author.id != master_id:
+def master_only(bot, message):
+    master_ids = bot.config.get(MASTER_IDS_KEY, [])
+
+    if message.author.id not in master_ids:
         raise NotMasterError

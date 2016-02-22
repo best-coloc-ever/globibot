@@ -1,17 +1,16 @@
-from .discord import EMOTES, master
+from .discord import EMOTES
 
 def unexpected_error_str(message, tb):
     context = {
         'sender': message.author.mention,
         'sad': EMOTES.LirikFeels,
-        'master': master,
         'heart': EMOTES.LirikH,
         'error': tb
     }
 
     string = (
         '{sender} Your command broke me {sad}\n'
-        'Please notify my master {master} of the following error {heart}:\n'
+        'Please notify my master of the following error {heart}:\n'
         '```python\n'
         '{error}\n'
         '```'
@@ -22,14 +21,13 @@ def unexpected_error_str(message, tb):
 def unexpected_async_error_str(tb):
     context = {
         'sad': EMOTES.LirikFeels,
-        'master': master,
         'heart': EMOTES.LirikH,
         'error': tb
     }
 
     string = (
         'Something asynchronous broke {sad}\n'
-        'Please notify my master {master} of the following error {heart}:\n'
+        'Please notify my master of the following error {heart}:\n'
         '```python\n'
         '{error}\n'
         '```'

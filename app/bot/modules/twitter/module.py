@@ -7,8 +7,6 @@ from twitter import OAuth
 
 from collections import defaultdict
 
-from os import getenv
-
 import asyncio
 
 class Twitter(Module):
@@ -17,10 +15,10 @@ class Twitter(Module):
         super().__init__(*args, **kwargs)
 
         self.oauth = OAuth(
-            getenv(c.ACCESS_TOKEN_KEY),
-            getenv(c.ACCESS_TOKEN_SECRET_KEY),
-            getenv(c.CONSUMER_KEY_KEY),
-            getenv(c.CONSUMER_SECRET_KEY),
+            self.bot.config.get(c.ACCESS_TOKEN_KEY),
+            self.bot.config.get(c.ACCESS_TOKEN_SECRET_KEY),
+            self.bot.config.get(c.CONSUMER_KEY_KEY),
+            self.bot.config.get(c.CONSUMER_SECRET_KEY),
         )
         self.client = TwitterAPI(auth=self.oauth)
 

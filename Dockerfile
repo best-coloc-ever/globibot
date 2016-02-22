@@ -15,4 +15,4 @@ RUN apt-get update -y && apt-get install -y \
 
 WORKDIR /app
 
-CMD ["python3", "main.py"]
+CMD ["python3", "app/main.py"]

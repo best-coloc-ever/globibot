@@ -1,0 +1,26 @@
+{
+    // Bot credentials (Mandatory)
+    "GLOBIBOT_EMAIL": "globibot.official@gmail.com",
+    "GLOBIBOT_PASSWORD": null,
+
+    // Modules to enable
+    "MODULES": [
+        // "Hello",
+        "Twitch",
+        "Twitter",
+        "Dj",
+        "Giveaway",
+        "Github"
+    ],
+
+    // Twitter app access keys (Required for the Twitter module)
+    "TWITTER_CONSUMER_KEY": null,
+    "TWITTER_CONSUMER_SECRET": null,
+    "TWITTER_ACCESS_TOKEN": null,
+    "TWITTER_ACCESS_TOKEN_SECRET": null,
+
+    // Id of a discord profile able to run master commands
+    "MASTER_IDS": [
+        "89108411861467136"
+    ]
+}

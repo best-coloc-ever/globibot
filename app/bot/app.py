@@ -1,29 +1,28 @@
+from utils import json_config
+
 from .globibot import Globibot
+from .constants import CONFIG_FILE
 
-from . import constants as c
-from . import modules
-
-from os import getenv
+import sys
 
 def init_globibot(web_app):
-    email = getenv(c.GLOBIBOT_EMAIL_KEY, c.GLOBIBOT_DEFAULT_EMAIL)
-    password = getenv(c.GLOBIBOT_PASSWORD_KEY)
-
-    if password is None:
-        raise RuntimeError(
-            "Please specify Globibot's credentials:\n"
-            " - Globibot's email:    {}\n"
-            " - Globibot's password: {}\n"
-                .format(c.GLOBIBOT_EMAIL_KEY, c.GLOBIBOT_PASSWORD_KEY)
+    try:
+        config_file = open(CONFIG_FILE, 'r')
+    except IOError as e:
+        sys.exit(
+            'Error while opening required file: "{}"\n'
+            '{}'
+                .format(CONFIG_FILE, e)
         )
 
-    bot_modules = [
-        # modules.Hello,
-        modules.Github,
-        modules.Twitch,
-        modules.Twitter,
-        modules.Dj,
-        modules.Giveaway,
-    ]
+    with config_file:
+        try:
+            config = json_config.load(config_file)
+        except Exception as e:
+            sys.exit(
+                'Error while parsing file: "{}"\n'
+                '{}'
+                    .format(CONFIG_FILE, e)
+            )
 
-    return Globibot(web_app, bot_modules, email, password)
+    return Globibot(config, web_app)
