@@ -35,6 +35,9 @@ class Globibot(DiscordClient):
                 future = module.dispatch(message)
                 asyncio.ensure_future(future)
 
+    async def on_error(self, event, *args, **kwargs):
+        logger.error('Got a client error: {} {} {}'.format(event, args, kwargs))
+
     def find_voice_channel(self, name, server):
         is_matching_channel = lambda channel: \
             channel.type == ChannelType.voice and \
