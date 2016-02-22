@@ -19,7 +19,7 @@
     "TWITTER_ACCESS_TOKEN": null,
     "TWITTER_ACCESS_TOKEN_SECRET": null,
 
-    // Id of a discord profile able to run master commands
+    // Id of discord profiles able to run master commands
     "MASTER_IDS": [
         "89108411861467136"
     ]
