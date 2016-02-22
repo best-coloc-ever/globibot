@@ -1,7 +1,9 @@
 from .command import FORMAT_MAGIC_ATTR
 from .logging import logger
+from .discord import EMOTES
 from .errors import ModuleException, unexpected_error_str, unexpected_async_error_str
 
+from discord.errors import Forbidden
 from traceback import format_exc
 from functools import partial
 from inspect import getmembers, isfunction
@@ -48,9 +50,22 @@ class Module:
     async def send_file(self, channel, file_path, clear=0):
         self.debug('Sending file: "{}"'.format(file_path))
 
-        message = await self.bot.send_file(channel, file_path)
-        self.process_message(message, clear)
-        return message
+        try:
+            message = await self.bot.send_file(channel, file_path)
+            self.process_message(message, clear)
+            return message
+        except Forbidden:
+            await self.send_message(
+                channel,
+                (
+                    'I don\'t seem to have permission to upload '
+                    'files in this channel {}'
+                ).format(
+                    EMOTES.LirikFeels
+                )
+            )
+        except Exception as e:
+            self.error('Failed to upload file: {}'.format(e))
 
     def process_message(self, message, clear):
         if clear > 0:
