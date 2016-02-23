@@ -14,7 +14,7 @@ class SongQueue(deque):
         if len(self) == 0:
             return 'No queue'
         else:
-            s = '\n------------- **CURRENT QUEUE** -------------\n\n'
+            s = '\n--------------- **NEXT SONGS** ---------------\n\n'
             songs = [self.song_str(song, i + 1) for i, song in enumerate(list(self)[:9])]
             s += '\n'.join(songs)
             if len(self) > 10:
@@ -41,6 +41,7 @@ class RandomQueue(SongQueue):
             '--------------------------------------------------\n'
             '⚠ *No song in queue* ⚠\n'
             '*Playing songs from the past*\n'
+            'Use `!dj play *link or id*` to queue up songs'
             '{}'
         ).format(
             super().__str__()

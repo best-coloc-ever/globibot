@@ -61,7 +61,7 @@ class Dj(Module):
             message.channel,
             (
                 'Ready to play music in `{}`!\n'
-                'Use the `!dj play youtube_id_or_link` in this channel '
+                'Use the `!dj play *link or id*` in this channel '
                 'to queue songs {}'
             ).format(
                 self.voice_channel.name,
