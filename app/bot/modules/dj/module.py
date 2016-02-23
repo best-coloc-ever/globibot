@@ -203,13 +203,17 @@ class Dj(Module):
             raise NotListening
 
     async def play_error(self, song, exception):
+        self.queue.discard(song)
+        self.backup_queue.discard(song)
+
         await self.send_message(
             self.invoked_channel,
             (
                 '{} I was unable to play your song {}\n'
                 '```\n'
                 '{}\n'
-                '```'
+                '```\n'
+                'I removed it from the queue'
             ).format(
                 song.message.author.mention,
                 EMOTES.LirikFeels,
