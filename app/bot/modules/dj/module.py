@@ -105,7 +105,7 @@ class Dj(Module):
     async def play_song(self, message, song_link):
         self.ensure_channel(message)
         # Queue limit
-        if len(self.queue.user_songs(message.author.id)) > c.MAX_VIDEO_PER_USER:
+        if len(self.queue.user_songs(message.author.id)) >= c.MAX_VIDEO_PER_USER:
             raise TooManyQueuedForUser
         song = Song(song_link, message)
         if song in self.blacklisted_songs:
