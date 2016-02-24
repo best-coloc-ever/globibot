@@ -5,6 +5,8 @@ from imghdr import what as image_type
 
 from collections import defaultdict
 
+from utils.logging import logger
+
 import os
 
 class EmoteStore:
@@ -22,6 +24,7 @@ class EmoteStore:
         self.load_global()
         self.load_subscriber()
         self.load_bttv()
+        self.load_ffz()
 
     def load_global(self):
         URL = 'http://twitchemotes.com/api_cache/v2/global.json'
@@ -66,6 +69,15 @@ class EmoteStore:
                                    .replace('{{image}}', bttv_size)
                 self.url_store[emote_name][size] = 'http:{}'.format(location)
 
+    def load_ffz(self):
+        URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_ffz.json'
+        FFZ_SIZE = ['1', '2', '4'] # Weirdest shit
+        response = requests.get(URL)
+        for emote_name, emote_id in response.json().items():
+            for size, ffz_size in zip(EmoteStore.SIZES, FFZ_SIZE):
+                location = 'https://cdn.frankerfacez.com/emoticon/{}/{}'.format(emote_id, ffz_size)
+                self.url_store[emote_name][size] = location
+
     def get(self, emote_name, size):
         # Already downloaded ?
         file_name = self.file_store[emote_name].get(size)
@@ -78,7 +90,15 @@ class EmoteStore:
             return None
 
         # Download and save it
-        temp_file, _ = urlretrieve(emote_url)
+        try:
+            temp_file, _ = urlretrieve(emote_url)
+        except Exception as e:
+            logger.error('Failed to fetch "{}" on size {}: {}'.format(
+                emote_name, size, e
+            ))
+            if size == EmoteStore.SMALL:
+                return None
+            return self.get(emote_name, EmoteStore.SMALL)
         ext = image_type(temp_file)
         file_name = '{}.{}'.format(temp_file, ext)
         os.rename(temp_file, file_name)
