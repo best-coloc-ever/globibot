@@ -1,0 +1,16 @@
+version: '2'
+
+volumes:
+  globibot-data: {}
+
+services:
+
+  bot:
+    build: ./bot
+    volumes:
+      - './bot/:/app:ro'
+
+  db:
+    image: mongo
+    volumes:
+      - 'globibot-data:/data/db'

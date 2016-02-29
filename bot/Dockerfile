@@ -7,7 +7,8 @@ RUN pip install \
     parse \
     requests \
     twitter \
-    youtube-dl
+    youtube-dl \
+    pymongo
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
