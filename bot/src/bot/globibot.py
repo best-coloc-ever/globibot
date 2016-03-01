@@ -27,7 +27,7 @@ class Globibot(DiscordClient):
         password = self.config.get(c.GLOBIBOT_PASSWORD_KEY)
 
         if email is None or password is None:
-            sys.exit('Missing credentials in: "{}"'.format(c.CONFIG_FILE))
+            sys.exit('Missing credentials')
 
         return (email, password)
 
