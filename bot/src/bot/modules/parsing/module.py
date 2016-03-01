@@ -15,5 +15,5 @@ class AdvancedParsing(Module):
     async def test(self, message, n=0):
         await self.send_message(
             message.channel,
-            '{}: {}'.format(type(n), n) # TODO: make it a number automatically
+            '{}: {}'.format(type(n), n)
         )

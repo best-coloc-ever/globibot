@@ -23,9 +23,17 @@ tokenize = lambda string: list(
 exact = lambda value: some(lambda tok: tok.value == value)
 exact_no_case = lambda value: some(lambda tok: tok.value.lower() == value.lower())
 
+def to_i(tok):
+    try:
+        tok.value = int(tok.value)
+    except:
+        pass
+
+    return tok
+
 some_type = lambda t: some(lambda tok: tok.type == t)
 alpha_num = some_type(TokenType.AlphaNum)
-integer = some_type(TokenType.Integer)
+integer = some_type(TokenType.Integer) >> to_i
 char = some_type(TokenType.Char)
 
 class ContextualPair(tuple):
