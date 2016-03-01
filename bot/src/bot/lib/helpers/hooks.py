@@ -1,6 +1,5 @@
 from ..errors import ModuleException
 from ..discord import EMOTES
-from ..constants import MASTER_IDS_KEY
 
 class NotMasterError(ModuleException):
 
@@ -11,7 +10,5 @@ class NotMasterError(ModuleException):
         )
 
 def master_only(bot, message):
-    master_ids = bot.config.get(MASTER_IDS_KEY, [])
-
-    if message.author.id not in master_ids:
+    if not bot.is_master(message.author):
         raise NotMasterError

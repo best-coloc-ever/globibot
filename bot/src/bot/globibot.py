@@ -50,6 +50,10 @@ class Globibot(DiscordClient):
         logger.debug('Done')
 
         return modules
+
+    def is_master(self, who):
+        return who.id in self.masters
+
     async def boot(self):
         await self.start(*self.credentials)
 
