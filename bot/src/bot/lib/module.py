@@ -1,4 +1,4 @@
-from .command import FORMAT_MAGIC_ATTR
+from .decorators.validator import COMMAND_VALIDATORS_ATTR
 from .logging import logger
 from .discord import EMOTES
 from .errors import ModuleException, unexpected_error_str, unexpected_async_error_str
@@ -7,7 +7,6 @@ from discord.errors import Forbidden
 from traceback import format_exc
 from functools import partial
 from inspect import getmembers, isfunction
-from parse import parse
 
 import logging
 import asyncio
@@ -26,10 +25,10 @@ class Module:
         self.critical = partial(self.log, logging.CRITICAL)
 
     async def dispatch(self, message):
-        for format, command in self.actions:
-            parsed = parse(format, message.content)
-            if parsed:
-                future = self.invoke_command(command, message, **parsed.named)
+        for validator, action in self.actions:
+            is_match, context = validator(message.content)
+            if is_match:
+                future = self.invoke_command(action, message, **context)
                 asyncio.ensure_future(future)
 
         self.on_message(message)
@@ -98,11 +97,10 @@ class Module:
         actions = []
 
         for _, function in getmembers(self.__class__, isfunction):
-            if hasattr(function, FORMAT_MAGIC_ATTR):
-                formats = getattr(function, FORMAT_MAGIC_ATTR)
-                for format in formats:
-                    action = (format, function)
-                    actions.append(action)
+            if hasattr(function, COMMAND_VALIDATORS_ATTR):
+                validators = getattr(function, COMMAND_VALIDATORS_ATTR)
+                for validator in validators:
+                    actions.append((validator, function))
 
         return actions
 

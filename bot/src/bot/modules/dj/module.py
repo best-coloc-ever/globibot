@@ -1,4 +1,7 @@
-from ..base import Module, command, master_only, EMOTES
+from bot.lib.module import Module
+from bot.lib.decorators import simple_command
+from bot.lib.helpers.hooks import master_only
+from bot.lib.discord import EMOTES
 
 from .errors import *
 from .player import Player
@@ -34,7 +37,7 @@ class Dj(Module):
         if self.queue_display and message.channel == self.invoked_channel:
             self.queue_display.pull_down()
 
-    @command('!dj join {channel_name}', master_only)
+    @simple_command('!dj join {channel_name}', master_only)
     async def join_room(self, message, channel_name):
         if self.invoked_channel:
             raise AlreadyInvoked(self.voice_channel)
@@ -72,7 +75,7 @@ class Dj(Module):
         self.queue_display = QueueDisplay(self, self.invoked_channel)
         self.run_async(self.watch_kicks(), self.invoked_channel)
 
-    @command('!dj retire', master_only)
+    @simple_command('!dj retire', master_only)
     async def retire(self, message):
         self.ensure_channel(message)
         self.player.stop()
@@ -94,14 +97,14 @@ class Dj(Module):
             'Bye'
         )
 
-    @command('!dj queue')
+    @simple_command('!dj queue')
     async def toggle_queue(self, message):
         self.ensure_channel(message)
         # Toggling the queue display
         self.queue_display.toggle()
 
-    @command('!dj play {song_link}')
-    @command('!dj add {song_link}')
+    @simple_command('!dj play {song_link}')
+    @simple_command('!dj add {song_link}')
     async def play_song(self, message, song_link):
         self.ensure_channel(message)
         # Queue limit
@@ -133,7 +136,7 @@ class Dj(Module):
         # Queuing it
         self.queue.append(song)
 
-    @command('!dj skip')
+    @simple_command('!dj skip')
     async def skip_song(self, message):
         self.ensure_channel(message)
         self.ensure_listening(message)
@@ -163,7 +166,7 @@ class Dj(Module):
             max(2, listener_count - 2 - int(listener_count / 4) - int(listener_count / 7))
         )
 
-    @command('!dj blacklist')
+    @simple_command('!dj blacklist')
     async def blacklist_song(self, message):
         self.ensure_channel(message)
         self.ensure_listening(message)

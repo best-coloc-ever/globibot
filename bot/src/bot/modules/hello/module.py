@@ -1,4 +1,7 @@
-from ..base import Module, command, ModuleException, master_only
+from bot.lib.module import Module
+from bot.lib.errors import ModuleException
+from bot.lib.decorators import simple_command
+from bot.lib.helpers.hooks import master_only
 
 import asyncio
 
@@ -9,9 +12,9 @@ class HelloError(ModuleException):
 
 class Hello(Module):
 
-    @command('Hello')
-    @command('Hi')
-    @command('Hej')
+    @simple_command('Hello')
+    @simple_command('Hi')
+    @simple_command('Hej')
     async def hello(self, message):
         self.info('Saluting {}...'.format(message.author.name))
 
@@ -20,19 +23,19 @@ class Hello(Module):
             'Hej {}'.format(message.author.mention)
         )
 
-    @command('Error')
+    @simple_command('Error')
     async def error(self, message):
         raise HelloError()
 
-    @command('Crash')
+    @simple_command('Crash')
     async def crash(self, message):
         error
 
-    @command('Master', master_only)
+    @simple_command('Master', master_only)
     async def master_only_cmd(self, message):
         await self.send_message(message.channel, 'Hi')
 
-    @command('Async', master_only)
+    @simple_command('Async', master_only)
     async def async_cmd(self, message):
 
         async def async_crash():

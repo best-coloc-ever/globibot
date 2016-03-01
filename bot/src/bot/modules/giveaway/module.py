@@ -1,4 +1,6 @@
-from ..base import Module, command, EMOTES
+from bot.lib.module import Module
+from bot.lib.decorators import simple_command
+from bot.lib.discord import EMOTES
 
 from . import errors
 
@@ -39,7 +41,7 @@ class Giveaway(Module):
         self.giveaway_start = None
         self.participants = set()
 
-    @command('!giveaway')
+    @simple_command('!giveaway')
     async def current_giveaway(self, message):
         if not message.channel.is_private:
             raise errors.NotPrivateChannel
@@ -58,7 +60,7 @@ class Giveaway(Module):
         else:
             raise errors.NoCurrentGiveaway
 
-    @command('!giveaway content {content}')
+    @simple_command('!giveaway content {content}')
     async def set_giveaway_content(self, message, content):
         if not message.channel.is_private:
             raise errors.NotPrivateChannel
@@ -86,7 +88,7 @@ class Giveaway(Module):
                 )
             )
 
-    @command('!giveaway description {description}')
+    @simple_command('!giveaway description {description}')
     async def set_giveaway_description(self, message, description):
         if not message.channel.is_private:
             raise errors.NotPrivateChannel
@@ -110,7 +112,7 @@ class Giveaway(Module):
                 )
             )
 
-    @command('!giveaway start')
+    @simple_command('!giveaway start')
     async def start_giveaway(self, message):
         if self.giveaway_channel:
             raise errors.AlreadyInProgress
@@ -135,7 +137,7 @@ class Giveaway(Module):
             message.channel
         )
 
-    @command('!giveaway join')
+    @simple_command('!giveaway join')
     async def join_giveaway(self, message):
         if self.giveaway_channel != message.channel:
             return

@@ -1,4 +1,4 @@
-from ..base import EMOTES
+from bot.lib.discord import EMOTES
 
 import random
 

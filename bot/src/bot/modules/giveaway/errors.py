@@ -1,4 +1,5 @@
-from ..base import ModuleException, EMOTES
+from bot.lib.errors import ModuleException
+from bot.lib.discord import EMOTES
 
 class NotPrivateChannel(ModuleException):
 

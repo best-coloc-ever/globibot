@@ -1,4 +1,5 @@
-from ..base import Module, command
+from bot.lib.module import Module
+from bot.lib.decorators import simple_command
 
 from .handler import GithubHandler
 
@@ -12,7 +13,7 @@ class Github(Module):
             (r'/github', GithubHandler, dict(module=self))
         ])
 
-    @command('!github enable')
+    @simple_command('!github enable')
     async def enable_notifications(self, message):
         self.notified_channels.add(message.channel)
 
@@ -21,7 +22,7 @@ class Github(Module):
             '`Github` notifications are now **enabled** in this channel'
         )
 
-    @command('!github disable')
+    @simple_command('!github disable')
     async def disable_notifications(self, message):
         self.notified_channels.discard(message.channel)
 

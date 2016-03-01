@@ -1,4 +1,4 @@
-from ..base import EMOTES
+from bot.lib.discord import EMOTES
 
 from . import constants as c
 from . import tools as t
