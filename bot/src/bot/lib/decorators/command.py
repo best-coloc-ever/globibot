@@ -2,7 +2,7 @@ from .validator import validator
 
 from ..helpers.parsing import tokenize, ContextualPair
 
-from funcparserlib.parser import NoParseError
+from funcparserlib.parser import NoParseError,_Tuple
 
 # from utils.logging import logger
 
@@ -13,7 +13,7 @@ def command(parser, *args, **kwargs):
             tokens = tokenize(content)
             # logger.debug(tokens)
             parsed = parser.parse(tokens)
-            if not type(parsed) is list:
+            if type(parsed) is not _Tuple:
                 parsed = [parsed]
             # logger.debug(parsed)
             return True, dict([
