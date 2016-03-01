@@ -5,7 +5,7 @@ from parse import parse
 def simple_command(format, *args, **kwargs):
 
     def validate_format(content):
-        parsed = parse(format, content)
+        parsed = parse(format, content.strip())
 
         if parsed is None:
             return (False, {})
