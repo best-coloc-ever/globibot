@@ -12,5 +12,5 @@ bot:
     #   consumer_secret: null
     #   access_token: null
     #   access_token_secret: null
-  master_ids:
+  masters:
     - 89108411861467136
