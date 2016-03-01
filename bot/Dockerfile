@@ -8,7 +8,8 @@ RUN pip install \
     requests \
     twitter \
     youtube-dl \
-    pymongo
+    pymongo \
+    funcparserlib
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
