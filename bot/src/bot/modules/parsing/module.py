@@ -1,10 +1,10 @@
 from bot.lib.module import Module
 from bot.lib.decorators import command
-from bot.lib.helpers.parsing import exact_no_case, alpha_num, context, maybe, integer
+from bot.lib.helpers.parsing import exact_no_case, word, context, maybe, integer
 
 class AdvancedParsing(Module):
 
-    @command(exact_no_case('hi') + maybe(alpha_num >> context('who')))
+    @command(exact_no_case('hi') + maybe(word >> context('who')))
     async def plop(self, message, who='anonymous'):
         await self.send_message(
             message.channel,
