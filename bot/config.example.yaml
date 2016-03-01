@@ -1,0 +1,16 @@
+bot:
+  email: globibot.official@gmail.com
+  password: null
+  modules:
+    hello:    {}
+    # twitch:   {}
+    # dj:       {}
+    # giveaway: {}
+    # github:   {}
+    # twitter:
+    #   consumer_key: null
+    #   consumer_secret: null
+    #   access_token: null
+    #   access_token_secret: null
+  master_ids:
+    - 89108411861467136

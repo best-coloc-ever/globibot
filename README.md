@@ -14,6 +14,6 @@ docker run \
 ```
 
 ## Configuration
-The bot configuration is read from a `config.json` file placed at the root of the project
+The bot configuration is read from a `config.yaml` file placed in the [bot](./bot)directory
 
-See [`config.example.json`](/config.example.json) for the option list
+See [`config.example.yaml`](./bot/config.example.yaml)

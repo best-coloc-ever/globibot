@@ -18,10 +18,10 @@ class Twitter(Module):
         super().__init__(*args, **kwargs)
 
         self.oauth = OAuth(
-            self.bot.config.get(c.ACCESS_TOKEN_KEY),
-            self.bot.config.get(c.ACCESS_TOKEN_SECRET_KEY),
-            self.bot.config.get(c.CONSUMER_KEY_KEY),
-            self.bot.config.get(c.CONSUMER_SECRET_KEY),
+            self.config.get(c.ACCESS_TOKEN_KEY),
+            self.config.get(c.ACCESS_TOKEN_SECRET_KEY),
+            self.config.get(c.CONSUMER_KEY_KEY),
+            self.config.get(c.CONSUMER_SECRET_KEY),
         )
         self.client = TwitterAPI(auth=self.oauth)
 

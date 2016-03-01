@@ -1,28 +1,18 @@
-from utils import json_config
+from utils.config import load
 
 from .globibot import Globibot
-from .constants import CONFIG_FILE
+from .constants import BOT_CONFIG_KEY, CONFIG_FILE
 
 import sys
 
 def init_globibot(web_app):
     try:
-        config_file = open(CONFIG_FILE, 'r')
-    except IOError as e:
+        config = load(CONFIG_FILE)
+        bot_config = config[BOT_CONFIG_KEY]
+    except KeyError:
         sys.exit(
-            'Error while opening required file: "{}"\n'
-            '{}'
-                .format(CONFIG_FILE, e)
+            'Missing top level configuration key: {}'
+                .format(BOT_CONFIG_KEY)
         )
 
-    with config_file:
-        try:
-            config = json_config.load(config_file)
-        except Exception as e:
-            sys.exit(
-                'Error while parsing file: "{}"\n'
-                '{}'
-                    .format(CONFIG_FILE, e)
-            )
-
-    return Globibot(config, web_app)
+    return Globibot(bot_config, web_app)

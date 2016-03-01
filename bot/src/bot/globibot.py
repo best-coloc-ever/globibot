@@ -17,25 +17,39 @@ class Globibot(DiscordClient):
         self.config = config
         self.web = web
 
-        email = config.get(c.GLOBIBOT_EMAIL_KEY)
-        password = config.get(c.GLOBIBOT_PASSWORD_KEY)
+        self.credentials = self.load_credentials()
+        self.modules = self.load_modules()
+
+        self.masters = [str(id) for id in self.config.get(c.MASTER_IDS_KEY, [])]
+
+    def load_credentials(self):
+        email = self.config.get(c.GLOBIBOT_EMAIL_KEY)
+        password = self.config.get(c.GLOBIBOT_PASSWORD_KEY)
 
         if email is None or password is None:
             sys.exit('Missing credentials in: "{}"'.format(c.CONFIG_FILE))
 
-        self.credentials = (email, password)
+        return (email, password)
 
-        module_classes = [
-            module_class_by_name(name)
-            for name in config.get(c.ENABLED_MODULES_KEY, [])
+    def load_modules(self):
+        enabled_modules = self.config.get(c.ENABLED_MODULES_KEY)
+
+        if enabled_modules is None:
+            enabled_modules = {}
+
+        module_specs = [
+            (cls, config) for cls, config in [
+                (module_class_by_name(name), config)
+                for name, config in enabled_modules.items()
+            ]
+            if cls is not None
         ]
-        # Filtering Nones
-        module_classes = [cls for cls in module_classes if cls is not None]
 
-        logger.debug('Initializing {} modules...'.format(len(module_classes)))
-        self.modules = [cls(self) for cls in module_classes]
+        logger.debug('Initializing {} modules...'.format(len(module_specs)))
+        modules = [cls(self, spec) for cls, spec in module_specs]
         logger.debug('Done')
 
+        return modules
     async def boot(self):
         await self.start(*self.credentials)
 

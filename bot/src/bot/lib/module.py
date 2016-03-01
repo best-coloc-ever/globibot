@@ -13,8 +13,9 @@ import asyncio
 
 class Module:
 
-    def __init__(self, bot):
+    def __init__(self, bot, config):
         self.bot = bot
+        self.config = config
         self.actions = self._action_list()
 
         # Logging helpers

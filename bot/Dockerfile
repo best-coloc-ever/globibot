@@ -5,11 +5,12 @@ RUN pip install \
     git+https://github.com/Rapptz/discord.py@async \
     tornado \
     parse \
+    funcparserlib \
     requests \
     twitter \
     youtube-dl \
     pymongo \
-    funcparserlib
+    pyyaml
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
