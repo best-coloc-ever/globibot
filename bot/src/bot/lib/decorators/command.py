@@ -1,6 +1,6 @@
 from .validator import validator
 
-from ..helpers.parsing import tokenize, ContextualPair
+from ..helpers.parsing import tokenize, BoundPair
 
 from funcparserlib.parser import NoParseError,_Tuple
 
@@ -18,7 +18,7 @@ def command(parser, *args, **kwargs):
             # logger.debug(parsed)
             return True, dict([
                 named for named in parsed
-                if type(named) is ContextualPair
+                if type(named) is BoundPair
             ])
         except NoParseError as e:
             # logger.error(e)

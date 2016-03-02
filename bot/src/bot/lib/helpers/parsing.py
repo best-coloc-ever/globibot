@@ -1,5 +1,5 @@
 from funcparserlib.lexer import make_tokenizer
-from funcparserlib.parser import *
+from funcparserlib import parser as p
 
 class TokenType:
     Space = 'SPACE'
@@ -12,28 +12,57 @@ TOKEN_SPEC = [
     (TokenType.Word,    (r'\S+',)), # Word is currently a catch-all
 ]
 
-tokenizer = make_tokenizer(TOKEN_SPEC)
-tokenize = lambda string: list(
-    token for token in tokenizer(string)
-    if token.type not in [TokenType.Space]
+default_tokenizer = make_tokenizer(TOKEN_SPEC)
+
+def tokenize(string, tokenizer=default_tokenizer, ignores=(TokenType.Space,)):
+    return [
+        token for token in tokenizer(string)
+        if token.type not in ignores
+    ]
+
+# Transformers
+to_i = lambda tok: int(tok.value)
+to_s = lambda tok: str(tok.value)
+to_a = lambda toks: [tok.value for tok in toks]
+const = lambda value: lambda _: value
+
+# Parsers
+a = lambda value: p.some(lambda tok: tok.value == value)
+string = lambda s: p.some(lambda tok: tok.value.lower() == s.lower())
+some_type = lambda t: p.some(lambda tok: tok.type == t)
+any_type = p.some(lambda _: True)
+
+maybe = p.maybe
+many = lambda parser: p.many(parser) >> to_a
+integer = some_type(TokenType.Integer) >> to_i
+word = some_type(TokenType.Word) >> to_s
+
+# High level helpers
+on_off_switch = (
+    (string('on')  >> const(True) ) |
+    (string('off') >> const(False))
 )
 
-exact = lambda value: some(lambda tok: tok.value == value)
-exact_no_case = lambda value: some(lambda tok: tok.value.lower() == value.lower())
+def int_range(low, high):
 
-def to_i(tok):
-    try:
-        tok.value = int(tok.value)
-    except:
-        pass
+    def predicate(token):
+        if token.type != TokenType.Integer:
+            return False
+        return to_i(token) in range(low, high + 1)
 
-    return tok
+    return p.some(predicate) >> to_i
 
-some_type = lambda t: some(lambda tok: tok.type == t)
-integer = some_type(TokenType.Integer) >> to_i
-word = some_type(TokenType.Word)
+def one_of(parser, first, *rest):
+    combined_parser = parser(first)
 
-class ContextualPair(tuple):
-    pass
+    for possibility in rest:
+        combined_parser = combined_parser | parser(possibility)
 
-context = lambda name: lambda tok: ContextualPair((name, tok.value))
+    return combined_parser
+
+# Context
+class BoundPair(tuple): pass
+
+def bind(transformed, name):
+    bind_expr = lambda value: BoundPair((name, value)) if value is not None else None
+    return transformed >> bind_expr
