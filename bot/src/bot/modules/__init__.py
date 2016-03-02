@@ -4,7 +4,6 @@ from .twitter.module import Twitter
 from .dj.module import Dj
 from .giveaway.module import Giveaway
 from .github.module import Github
-from .parsing.module import AdvancedParsing
 
 from utils.logging import logger
 
@@ -15,7 +14,6 @@ MODULE_CLASSES_BY_NAME = {
     'dj'      : Dj,
     'giveaway': Giveaway,
     'github'  : Github,
-    'advancedparsing': AdvancedParsing,
 }
 
 def module_class_by_name(name):
