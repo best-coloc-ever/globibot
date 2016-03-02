@@ -10,7 +10,8 @@ RUN pip install \
     twitter \
     youtube-dl \
     pymongo \
-    pyyaml
+    pyyaml \
+    pillow
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
