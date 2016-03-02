@@ -1,12 +1,13 @@
-import requests
-from urllib.request import urlretrieve
-
-from imghdr import what as image_type
-
-from collections import defaultdict
-
 from utils.logging import logger
 
+from imghdr import what as image_type
+from PIL import Image
+
+from urllib.request import urlretrieve
+from collections import defaultdict
+from tempfile import mkstemp
+
+import requests
 import os
 
 class EmoteStore:
@@ -20,6 +21,7 @@ class EmoteStore:
     def __init__(self):
         self.url_store = defaultdict(dict)
         self.file_store = defaultdict(dict)
+        self.assembled_store = defaultdict(dict)
 
         self.load_global()
         self.load_subscriber()
@@ -105,3 +107,34 @@ class EmoteStore:
         self.file_store[emote_name][size] = file_name
 
         return file_name
+
+    def assemble(self, emotes, size):
+        emote_hash = ''.join(emotes)
+        file_name = self.assembled_store[emote_hash].get(size)
+        if file_name:
+            return file_name
+
+        emote_files = [
+            emote_file for emote_file in [
+                self.get(name, size) for name in emotes
+            ]
+            if emote_file
+        ]
+
+        images = [Image.open(emote_file) for emote_file in emote_files]
+
+        if images:
+            total_width = sum(map(lambda i: i.width, images))
+            max_height = max(map(lambda i: i.height, images))
+            assembled = Image.new('RGBA', (total_width, max_height))
+
+            x = 0
+            for image in images:
+                assembled.paste(image, (x, 0))
+                x += image.width
+
+            file_name = '{}.png'.format(mkstemp()[1])
+            assembled.save(file_name)
+            self.assembled_store[emote_hash][size] = file_name
+
+            return file_name
