@@ -28,6 +28,10 @@ class EmoteStore:
         self.load_bttv()
         self.load_ffz()
 
+    def register_emote(self, emote_name, size, url):
+        if self.url_store[emote_name].get(size) is None:
+            self.url_store[emote_name][size] = url
+
     def load_global(self):
         URL = 'http://twitchemotes.com/api_cache/v2/global.json'
         response = requests.get(URL)
@@ -36,7 +40,7 @@ class EmoteStore:
             image_id = str(emote['image_id'])
             for size in EmoteStore.SIZES:
                 url = data['template'][size].replace('{image_id}', image_id)
-                self.url_store[emote_name][size] = url
+                self.register_emote(emote_name, size, url)
 
     def load_subscriber(self):
         URL = 'http://twitchemotes.com/api_cache/v2/subscriber.json'
@@ -48,7 +52,7 @@ class EmoteStore:
                 image_id = str(emote['image_id'])
                 for size in EmoteStore.SIZES:
                     url = data['template'][size].replace('{image_id}', image_id)
-                    self.url_store[code][size] = url
+                    self.register_emote(code, size, url)
 
     def load_bttv(self):
         URL = 'https://api.betterttv.net/2/emotes'
@@ -60,7 +64,7 @@ class EmoteStore:
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
                 location = template.replace('{{id}}', emote['id'])\
                                    .replace('{{image}}', bttv_size)
-                self.url_store[emote['code']][size] = 'http:{}'.format(location)
+                self.register_emote(emote['code'], size, 'http:{}'.format(location))
 
         # Special BTTV
         URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_bttv.json'
@@ -69,7 +73,7 @@ class EmoteStore:
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
                 location = template.replace('{{id}}', emote_id)\
                                    .replace('{{image}}', bttv_size)
-                self.url_store[emote_name][size] = 'http:{}'.format(location)
+                self.register_emote(emote_name, size, 'http:{}'.format(location))
 
     def load_ffz(self):
         URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_ffz.json'
@@ -78,7 +82,7 @@ class EmoteStore:
         for emote_name, emote_id in response.json().items():
             for size, ffz_size in zip(EmoteStore.SIZES, FFZ_SIZE):
                 location = 'https://cdn.frankerfacez.com/emoticon/{}/{}'.format(emote_id, ffz_size)
-                self.url_store[emote_name][size] = location
+                self.register_emote(emote_name, size, location)
 
     def get(self, emote_name, size):
         # Already downloaded ?
