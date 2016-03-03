@@ -1,0 +1,17 @@
+dist: trusty
+sudo: required
+
+before_install:
+  - curl -L https://get.docker.com/builds/`uname -s`/`uname -m`/docker-latest > docker
+  - chmod +x docker
+  - sudo mv docker /usr/local/bin
+  - curl -L https://github.com/docker/compose/releases/download/1.6.2/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+
+script:
+  - sudo service docker stop
+  - docker --version
+  - docker-compose --version
+  - sudo docker daemon & sleep 5
+  - docker-compose up -d
