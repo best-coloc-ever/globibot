@@ -2,7 +2,7 @@ COMMAND_VALIDATORS_ATTR = 'validators'
 
 NO_HOOK = lambda bot, message: None
 
-def validator(validate, pre_hook=NO_HOOK):
+def validator(validate, pre_hook=NO_HOOK, **kwargs):
 
     def wrapped(func):
 

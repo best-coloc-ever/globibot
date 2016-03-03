@@ -112,30 +112,42 @@ class EmoteStore:
 
         return file_name
 
-    def assemble(self, emotes, size):
-        emote_hash = ''.join(emotes)
+    def assemble(self, emote_layout, size):
+        emote_hash = '_'.join(map(lambda row: '-'.join(row), emote_layout))
         file_name = self.assembled_store[emote_hash].get(size)
         if file_name:
             return file_name
 
         emote_files = [
-            emote_file for emote_file in [
-                self.get(name, size) for name in emotes
-            ]
-            if emote_file
+            [
+                emote_file for emote_file in [
+                    self.get(name, size) for name in emote_row
+                ]
+                if emote_file
+            ] for emote_row in emote_layout
         ]
 
-        images = [Image.open(emote_file) for emote_file in emote_files]
+        images = [
+            [
+                Image.open(emote_file) for emote_file in emote_file_row
+            ] for emote_file_row in emote_files
+        ]
+
+        images = [image for image in images if image]
 
         if images:
-            total_width = sum(map(lambda i: i.width, images))
-            max_height = max(map(lambda i: i.height, images))
-            assembled = Image.new('RGBA', (total_width, max_height))
+            max_width = max(map(lambda image_row: sum(map(lambda i: i.width, image_row)), images))
+            total_height = sum(map(lambda image_row: max(map(lambda i: i.height, image_row)), images))
 
-            x = 0
-            for image in images:
-                assembled.paste(image, (x, 0))
-                x += image.width
+            assembled = Image.new('RGBA', (max_width, total_height))
+
+            y = 0
+            for image_row in images:
+                x = 0
+                for image in image_row:
+                    assembled.paste(image, (x, y))
+                    x += image.width
+                y += max(map(lambda i: i.height, image_row))
 
             file_name = '{}.png'.format(mkstemp()[1])
             assembled.save(file_name)

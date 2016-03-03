@@ -9,6 +9,7 @@ from .kappa import Kappa
 from parse import parse
 
 from collections import defaultdict
+from itertools import groupby
 
 import random
 
@@ -100,34 +101,45 @@ class Twitch(Module):
             if parsed:
                 return parsed.named['emote_name']
 
-    @command(p.bind(p.many(p.any_type), 'words'))
+    @command(p.bind(p.many(p.any_type), 'words'), ignored_tokens=())
     async def emotes(self, message, words):
-        emotes = [
-            emote for emote in [self.find_emote(word) for word in words]
-            if emote
+        tokens_per_line = [
+            list(g) for k, g in groupby(words, lambda x: '\n' in x)
+            if not k
         ]
 
-        await self.display_emotes(message.channel, emotes)
+        emote_layout = [
+            [
+                emote for emote in [self.find_emote(token) for token in tokens]
+                if emote
+            ] for tokens in tokens_per_line
+        ]
 
-    async def display_emotes(self, channel, emotes):
-        if channel not in self.emote_disabled_channels and emotes:
+        await self.display_emotes(message.channel, emote_layout)
+
+    async def display_emotes(self, channel, emote_layout):
+        if channel not in self.emote_disabled_channels and emote_layout:
             size = self.emote_sizes[channel]
-            emote_file = self.emote_store.assemble(emotes, size)
+            emote_file = self.emote_store.assemble(emote_layout, size)
             if emote_file:
                 await self.send_file(channel, emote_file)
 
     @command(
         prefix + p.string('random') +
-        p.bind(p.maybe(p.int_range(1, 10)), 'count')
+        p.bind(p.maybe(p.int_range(1, 9)), 'count')
     )
     async def random_emote(self, message, count=1):
         emote_names = list(self.emote_store.url_store.keys())
         random.shuffle(emote_names)
 
-        await self.display_emotes(message.channel, emote_names[:count])
+        emotes = emote_names[:count]
+        emote_layout = [emotes[i:i+3] for i in range(0, len(emotes), 3)]
+
+        await self.display_emotes(message.channel, emote_layout)
         await self.send_message(
             message.channel,
-            '({})'.format(', '.join(emote_names[:count]))
+            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout)),
+            15
         )
 
     @command(prefix + p.string('theme') + p.bind(p.word, 'theme'))
@@ -135,13 +147,16 @@ class Twitch(Module):
         emote_names = list(self.emote_store.url_store.keys())
         random.shuffle(emote_names)
 
-        themed_emote_names = [
+        themed_emote = [
             emote_name for emote_name in emote_names
             if theme.lower() in emote_name.lower()
-        ][:10]
+        ][:9]
 
-        await self.display_emotes(message.channel, themed_emote_names)
+        emote_layout = [themed_emote[i:i+3] for i in range(0, len(themed_emote), 3)]
+
+        await self.display_emotes(message.channel, emote_layout)
         await self.send_message(
             message.channel,
-            '({})'.format(', '.join(themed_emote_names))
+            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout)),
+            15
         )
