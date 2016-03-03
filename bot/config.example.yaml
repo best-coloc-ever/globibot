@@ -12,6 +12,8 @@ bot:
     #   consumer_secret: null
     #   access_token: null
     #   access_token_secret: null
+  servers:
+    - TestBot
   masters:
     - 89108411861467136
 

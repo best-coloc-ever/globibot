@@ -61,16 +61,29 @@ class Globibot(DiscordClient):
         await self.logout()
 
     async def on_ready(self):
-        logger.info('Globibot is online')
-        logger.info('Operating on {} discord servers'.format(len(self.servers)))
+        logger.info(
+            'Globibot is online: {} ({})'
+                .format(self.user.name, self.user.id)
+        )
+
+        self.enabled_servers = [
+            server for server in self.servers
+            if server.name in self.config.get(c.ENABLED_SERVERS_KEY, [])
+        ]
+
+        logger.info(
+            'Operating on {} discord servers'
+                .format(len(self.enabled_servers))
+        )
 
     async def on_message(self, message):
         if message.author.id != self.user.id: # ignoring our own messages
-            logger.debug('Dispatching message "{}"'.format(message.content))
+            if message.server in self.enabled_servers: # server filtering
+                logger.debug('Dispatching message "{}"'.format(message.content))
 
-            for module in self.modules:
-                future = module.dispatch(message)
-                asyncio.ensure_future(future)
+                for module in self.modules:
+                    future = module.dispatch(message)
+                    asyncio.ensure_future(future)
 
     async def on_error(self, event, *args, **kwargs):
         logger.error('Got a client error: {} {} {}'.format(event, args, kwargs))
