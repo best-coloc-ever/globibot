@@ -1,11 +1,13 @@
 from utils.logging import logger
 
 from imghdr import what as image_type
-from PIL import Image
+from PIL import Image, ImageSequence
 
 from urllib.request import urlretrieve
 from collections import defaultdict
-from tempfile import mkstemp
+from subprocess import call
+from tempfile import mkstemp, mkdtemp
+from shutil import rmtree
 
 import requests
 import os
@@ -139,18 +141,55 @@ class EmoteStore:
             max_width = max(map(lambda image_row: sum(map(lambda i: i.width, image_row)), images))
             total_height = sum(map(lambda image_row: max(map(lambda i: i.height, image_row)), images))
 
-            assembled = Image.new('RGBA', (max_width, total_height))
 
+            images_frames = [
+                [
+                    [
+                        frame.copy() for frame in ImageSequence.Iterator(image)
+                    ] for image in row
+                ] for row in images
+            ]
+
+            max_frames = 1
+            for row in images_frames:
+                for frames in row:
+                    max_frames = max(max_frames, len(frames))
+
+            max_frames = min(50, max_frames) # Limiting frames
+
+            assembled = [
+                Image.new('RGBA', (max_width, total_height))
+                for i in range(max_frames)
+            ]
+
+            print('builing image...')
             y = 0
-            for image_row in images:
+            for row in images_frames:
                 x = 0
-                for image in image_row:
-                    assembled.paste(image, (x, y))
-                    x += image.width
-                y += max(map(lambda i: i.height, image_row))
+                for frames in row:
+                    for i in range(max_frames):
+                        assembled[i].paste(frames[i % len(frames)], (x, y))
+                    x += frames[0].width
+                y += max(map(lambda f: f[0].height, row))
 
-            file_name = '{}.png'.format(mkstemp()[1])
-            assembled.save(file_name)
+            print('dump {}...'.format(max_frames))
+            if max_frames == 1:
+                file_name = '{}.png'.format(mkstemp()[1])
+                assembled[0].save(file_name)
+            else:
+                d = mkdtemp()
+                pngs = []
+                for i, img in enumerate(assembled):
+                    name = os.path.join(d, '{}.png'.format(i))
+                    img.save(name)
+                    pngs.append(name)
+                print('convert...')
+                file_name = '{}.gif'.format(mkstemp()[1])
+                command = ['convert', '-delay', '5', '-dispose', 'previous', '-loop', '0', '-strip'] + pngs + [file_name]
+                call(command)
+                call(['du', '-sm', file_name])
+                rmtree(d)
+
             self.assembled_store[emote_hash][size] = file_name
 
             return file_name
