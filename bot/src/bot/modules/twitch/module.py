@@ -10,6 +10,7 @@ from parse import parse
 
 from collections import defaultdict
 from itertools import groupby
+from time import time
 
 import random
 
@@ -27,6 +28,11 @@ class Twitch(Module):
         self.kappa = Kappa(self.emote_store, self.send_message, self.send_file)
         self.kappa_mode = False
 
+        self.blacklist = set()
+
+        self.cooldowns = defaultdict(lambda: 0)
+        self.cooldown = 0
+
         self.info('loaded {} twitch emotes'.format(
             len(self.emote_store.url_store))
         )
@@ -42,6 +48,30 @@ class Twitch(Module):
             message.channel,
             '`Twitch emotes` are now **{}** in this channel\n'
                 .format('enabled' if enabled else 'disabled')
+        )
+
+    @command(
+        prefix + p.string('blacklist') + p.bind(p.mention, 'id'),
+        master_only
+    )
+    async def blacklist_add(self, message, id):
+        self.blacklist.add(str(id))
+
+        await self.send_message(
+            message.channel,
+            '<@{}> is blacklisted from memeing'.format(id)
+        )
+
+    @command(
+        prefix + p.string('cooldown') + p.bind(p.integer, 'cd'),
+        master_only
+    )
+    async def cooldown(self, message, cd):
+        self.cooldown = cd
+
+        await self.send_message(
+            message.channel,
+            'Emote cooldown is now set at `{}` seconds'.format(cd)
         )
 
     kappa_prefix = prefix + p.string('Kappa')
@@ -89,6 +119,16 @@ class Twitch(Module):
             )
         )
 
+    def can_emote(self, author):
+        if author.id in self.blacklist:
+            return False
+        now = time()
+        self.debug('{},  {}'.format(self.cooldowns[author.id], now))
+        if now - self.cooldowns[author.id] > self.cooldown:
+            self.cooldowns[author.id] = now
+            return True
+        return False
+
     def find_emote(self, word):
         EMOTE_FORMAT = '<:{emote_name:S}:{:d}>'
 
@@ -114,35 +154,56 @@ class Twitch(Module):
             ] for tokens in tokens_per_line
         ]
 
-        await self.display_emotes(message.channel, emote_layout)
+        if not any(emote_layout):
+            return
 
-    async def display_emotes(self, channel, emote_layout):
-        if channel not in self.emote_disabled_channels and emote_layout:
-            size = self.emote_sizes[channel]
+        if not self.can_emote(message.author):
+            return
+
+        await self.display_emotes(message, emote_layout)
+
+    async def display_emotes(self, message, emote_layout):
+        if message.channel not in self.emote_disabled_channels and emote_layout:
+            size = self.emote_sizes[message.channel]
             emote_file = await self.emote_store.assemble(emote_layout, size)
             if emote_file:
-                await self.send_file(channel, emote_file)
+                await self.send_file(message.channel, emote_file)
 
     @command(
         prefix + p.string('random') +
         p.bind(p.maybe(p.int_range(1, 9)), 'count')
     )
     async def random_emote(self, message, count=1):
+        if not self.can_emote(message.author):
+            return
+
+        message = await self.send_message(
+            message.channel,
+            'Computing...'
+        )
+
         emote_names = list(self.emote_store.url_store.keys())
         random.shuffle(emote_names)
 
         emotes = emote_names[:count]
         emote_layout = [emotes[i:i+3] for i in range(0, len(emotes), 3)]
 
-        await self.display_emotes(message.channel, emote_layout)
-        await self.send_message(
-            message.channel,
-            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout)),
-            15
+        await self.display_emotes(message, emote_layout)
+        await self.bot.edit_message(
+            message,
+            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout))
         )
 
     @command(prefix + p.string('theme') + p.bind(p.word, 'theme'))
     async def themed(self, message, theme):
+        if not self.can_emote(message.author):
+            return
+
+        message = await self.send_message(
+            message.channel,
+            'Computing...'
+        )
+
         emote_names = list(self.emote_store.url_store.keys())
         random.shuffle(emote_names)
 
@@ -151,11 +212,18 @@ class Twitch(Module):
             if theme.lower() in emote_name.lower()
         ][:9]
 
+        if not themed_emote:
+            await self.bot.edit_message(
+                message,
+                'Could not find any emote that matched the theme `{}`'
+                    .format(theme)
+            )
+            return
+
         emote_layout = [themed_emote[i:i+3] for i in range(0, len(themed_emote), 3)]
 
-        await self.display_emotes(message.channel, emote_layout)
-        await self.send_message(
-            message.channel,
-            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout)),
-            15
+        await self.display_emotes(message, emote_layout)
+        await self.bot.edit_message(
+            message,
+            '\n'.join(map(lambda row: '({})'.format(', '.join(row)), emote_layout))
         )
