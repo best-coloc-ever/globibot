@@ -80,8 +80,7 @@ class Twitch(Module):
 
     @command(prefix + p.string('reload'), master_only)
     async def reload_emotes(self, message):
-        self.emote_store = EmoteStore()
-        self.kappa.emote_store = self.emote_store
+        await self.emote_store.load()
 
         await self.send_message(
             message.channel,

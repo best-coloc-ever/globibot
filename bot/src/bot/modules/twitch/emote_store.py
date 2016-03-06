@@ -31,19 +31,19 @@ class EmoteStore:
         self.http_client = AsyncHTTPClient()
 
         loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.load())
 
-        load_tasks = asyncio.gather(
+    def register_emote(self, emote_name, size, url):
+        if self.url_store[emote_name].get(size) is None:
+            self.url_store[emote_name][size] = url
+
+    async def load(self):
+        return await asyncio.gather(
             asyncio.ensure_future(self.load_global()),
             asyncio.ensure_future(self.load_subscriber()),
             asyncio.ensure_future(self.load_bttv()),
             asyncio.ensure_future(self.load_bttv2())
         )
-
-        loop.run_until_complete(load_tasks)
-
-    def register_emote(self, emote_name, size, url):
-        if self.url_store[emote_name].get(size) is None:
-            self.url_store[emote_name][size] = url
 
     async def http_get(self, url):
         tornado_future = self.http_client.fetch(url)
