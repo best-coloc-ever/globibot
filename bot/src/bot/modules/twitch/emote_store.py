@@ -28,7 +28,6 @@ class EmoteStore:
         self.load_global()
         self.load_subscriber()
         self.load_bttv()
-        self.load_ffz()
 
     def register_emote(self, emote_name, size, url):
         if self.url_store[emote_name].get(size) is None:
@@ -76,15 +75,6 @@ class EmoteStore:
                 location = template.replace('{{id}}', emote_id)\
                                    .replace('{{image}}', bttv_size)
                 self.register_emote(emote_name, size, 'http:{}'.format(location))
-
-    def load_ffz(self):
-        URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_ffz.json'
-        FFZ_SIZE = ['1', '2', '4'] # Weirdest shit
-        response = requests.get(URL)
-        for emote_name, emote_id in response.json().items():
-            for size, ffz_size in zip(EmoteStore.SIZES, FFZ_SIZE):
-                location = 'https://cdn.frankerfacez.com/emoticon/{}/{}'.format(emote_id, ffz_size)
-                self.register_emote(emote_name, size, location)
 
     def get(self, emote_name, size):
         # Already downloaded ?
