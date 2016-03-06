@@ -4,11 +4,13 @@ from funcparserlib import parser as p
 class TokenType:
     Space = 'SPACE'
     Integer = 'INTEGER'
+    Mention = 'MENTION'
     Word = 'WORD'
 
 TOKEN_SPEC = [
     (TokenType.Space,   (r'\s+',)),
     (TokenType.Integer, (r'[0-9]+',)),
+    (TokenType.Mention, (r'<@[0-9]+>',)),
     (TokenType.Word,    (r'\S+',)), # Word is currently a catch-all
 ]
 
@@ -24,6 +26,7 @@ def tokenize(string, tokenizer=default_tokenizer, ignores=(TokenType.Space,)):
 to_i = lambda tok: int(tok.value)
 to_s = lambda tok: str(tok.value)
 to_a = lambda toks: [tok.value for tok in toks]
+extract_mention_id = lambda tok: int(tok.value[2:-1])
 const = lambda value: lambda _: value
 
 # Parsers
@@ -36,6 +39,7 @@ maybe = p.maybe
 many = lambda parser: p.many(parser) >> to_a
 integer = some_type(TokenType.Integer) >> to_i
 word = some_type(TokenType.Word) >> to_s
+mention = some_type(TokenType.Mention) >> extract_mention_id
 
 # High level helpers
 on_off_switch = (
