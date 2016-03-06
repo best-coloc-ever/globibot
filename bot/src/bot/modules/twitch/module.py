@@ -120,7 +120,7 @@ class Twitch(Module):
     async def display_emotes(self, channel, emote_layout):
         if channel not in self.emote_disabled_channels and emote_layout:
             size = self.emote_sizes[channel]
-            emote_file = self.emote_store.assemble(emote_layout, size)
+            emote_file = await self.emote_store.assemble(emote_layout, size)
             if emote_file:
                 await self.send_file(channel, emote_file)
 

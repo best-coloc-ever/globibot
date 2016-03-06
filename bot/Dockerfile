@@ -6,7 +6,6 @@ RUN pip install \
     tornado \
     parse \
     funcparserlib \
-    requests \
     twitter \
     youtube-dl \
     pymongo \

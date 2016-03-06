@@ -1,15 +1,18 @@
 from utils.logging import logger
 
+from tornado.httpclient import AsyncHTTPClient
+from tornado.platform.asyncio import to_asyncio_future
+from tornado.escape import json_decode
+
 from imghdr import what as image_type
 from PIL import Image, ImageSequence
 
-from urllib.request import urlretrieve
 from collections import defaultdict
 from subprocess import call
 from tempfile import mkstemp, mkdtemp
 from shutil import rmtree
 
-import requests
+import asyncio
 import os
 
 class EmoteStore:
@@ -25,28 +28,41 @@ class EmoteStore:
         self.file_store = defaultdict(dict)
         self.assembled_store = defaultdict(dict)
 
-        self.load_global()
-        self.load_subscriber()
-        self.load_bttv()
+        self.http_client = AsyncHTTPClient()
+
+        loop = asyncio.get_event_loop()
+
+        load_tasks = asyncio.gather(
+            asyncio.ensure_future(self.load_global()),
+            asyncio.ensure_future(self.load_subscriber()),
+            asyncio.ensure_future(self.load_bttv()),
+            asyncio.ensure_future(self.load_bttv2())
+        )
+
+        loop.run_until_complete(load_tasks)
 
     def register_emote(self, emote_name, size, url):
         if self.url_store[emote_name].get(size) is None:
             self.url_store[emote_name][size] = url
 
-    def load_global(self):
+    async def http_get(self, url):
+        tornado_future = self.http_client.fetch(url)
+        return await to_asyncio_future(tornado_future)
+
+    async def load_global(self):
         URL = 'http://twitchemotes.com/api_cache/v2/global.json'
-        response = requests.get(URL)
-        data = response.json()
+        response = await self.http_get(URL)
+        data = json_decode(response.body)
         for emote_name, emote in data['emotes'].items():
             image_id = str(emote['image_id'])
             for size in EmoteStore.SIZES:
                 url = data['template'][size].replace('{image_id}', image_id)
                 self.register_emote(emote_name, size, url)
 
-    def load_subscriber(self):
+    async def load_subscriber(self):
         URL = 'http://twitchemotes.com/api_cache/v2/subscriber.json'
-        response = requests.get(URL)
-        data = response.json()
+        response = await self.http_get(URL)
+        data = json_decode(response.body)
         for channel in data['channels'].values():
             for emote in channel['emotes']:
                 code = emote['code']
@@ -55,28 +71,31 @@ class EmoteStore:
                     url = data['template'][size].replace('{image_id}', image_id)
                     self.register_emote(code, size, url)
 
-    def load_bttv(self):
+    async def load_bttv(self):
         URL = 'https://api.betterttv.net/2/emotes'
         BTTV_SIZES = ['1x', '2x', '3x']
-        response = requests.get(URL)
-        data = response.json()
-        template = data['urlTemplate']
+        BTTV_TEMPLATE = "//cdn.betterttv.net/emote/{{id}}/{{image}}"
+        response = await self.http_get(URL)
+        data = json_decode(response.body)
         for emote in data['emotes']:
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
-                location = template.replace('{{id}}', emote['id'])\
+                location = BTTV_TEMPLATE.replace('{{id}}', emote['id'])\
                                    .replace('{{image}}', bttv_size)
                 self.register_emote(emote['code'], size, 'http:{}'.format(location))
 
-        # Special BTTV
+    async def load_bttv2(self):
         URL = 'https://raw.githubusercontent.com/Jiiks/BetterDiscordApp/master/data/emotedata_bttv.json'
-        response = requests.get(URL)
-        for emote_name, emote_id in response.json().items():
+        BTTV_SIZES = ['1x', '2x', '3x']
+        BTTV_TEMPLATE = "//cdn.betterttv.net/emote/{{id}}/{{image}}"
+        response = await self.http_get(URL)
+        data = json_decode(response.body)
+        for emote_name, emote_id in data.items():
             for size, bttv_size in zip(EmoteStore.SIZES, BTTV_SIZES):
-                location = template.replace('{{id}}', emote_id)\
+                location = BTTV_TEMPLATE.replace('{{id}}', emote_id)\
                                    .replace('{{image}}', bttv_size)
                 self.register_emote(emote_name, size, 'http:{}'.format(location))
 
-    def get(self, emote_name, size):
+    async def get(self, emote_name, size):
         # Already downloaded ?
         file_name = self.file_store[emote_name].get(size)
         if file_name:
@@ -87,84 +106,106 @@ class EmoteStore:
         if emote_url is None:
             return None
 
-        # Download and save it
+        # Download it
         try:
-            temp_file, _ = urlretrieve(emote_url)
+            response = await self.http_get(emote_url)
         except Exception as e:
             logger.error('Failed to fetch "{}" on size {}: {}'.format(
                 emote_name, size, e
             ))
             if size == EmoteStore.SMALL:
+                self.file_store[emote_name][size] = None
                 return None
-            return self.get(emote_name, EmoteStore.SMALL)
+            return await self.get(emote_name, EmoteStore.SMALL)
+
+        # Save it
+        _, temp_file = mkstemp()
+        with open(temp_file, 'wb') as f:
+            f.write(response.body)
+
+        # Use the proper file extension for Discord to recognize the format
         ext = image_type(temp_file)
         file_name = '{}.{}'.format(temp_file, ext)
         os.rename(temp_file, file_name)
+
         self.file_store[emote_name][size] = file_name
 
         return file_name
 
-    def assemble(self, emote_layout, size):
+    async def assemble(self, emote_layout, size):
+        # Already downloaded ?
         emote_hash = '_'.join(map(lambda row: '-'.join(row), emote_layout))
         file_name = self.assembled_store[emote_hash].get(size)
         if file_name:
             return file_name
 
-        emote_files = [
-            [
-                emote_file for emote_file in [
-                    self.get(name, size) for name in emote_row
-                ]
-                if emote_file
-            ] for emote_row in emote_layout
-        ]
+        # Prefetch images
+        tasks = []
+        for row in emote_layout:
+            for emote in row:
+                tasks.append(asyncio.ensure_future(self.get(emote, size)))
 
-        images = [
-            [
-                Image.open(emote_file) for emote_file in emote_file_row
-            ] for emote_file_row in emote_files
-        ]
+        await asyncio.gather(*tasks)
 
-        images = [image for image in images if image]
+        # Build the canvas
+        images = []
+        max_width = 0
+        total_height = 0
+        max_frames = 1
+
+        for row in emote_layout:
+            width = 0
+            max_height = 0
+            image_row = []
+
+            for emote in row:
+                emote_file = await self.get(emote, size)
+
+                if emote_file is None:
+                    continue
+
+                image = Image.open(emote_file)
+                frames = [frame.copy() for frame in ImageSequence.Iterator(image)]
+
+                width += image.width
+                max_height = max(max_height, image.height)
+                max_frames = max(max_frames, len(frames))
+
+                image_row.append(frames)
+
+            if image_row:
+                images.append(image_row)
+
+            max_width = max(max_width, width)
+            total_height += max_height
 
         if images:
-            max_width = max(map(lambda image_row: sum(map(lambda i: i.width, image_row)), images))
-            total_height = sum(map(lambda image_row: max(map(lambda i: i.height, image_row)), images))
 
+            assembled = []
 
-            images_frames = [
-                [
-                    [
-                        frame.copy() for frame in ImageSequence.Iterator(image)
-                    ] for image in row
-                ] for row in images
-            ]
+            for i in range(max_frames):
+                image = Image.new('RGBA', (max_width, total_height))
 
-            max_frames = 1
-            for row in images_frames:
-                for frames in row:
-                    max_frames = max(max_frames, len(frames))
+                y = 0
+                for row in images:
+                    x = 0
+                    max_height = 0
 
-            max_frames = min(50, max_frames) # Limiting frames
+                    for frames in row:
+                        frame = frames[i % len(frames)]
+                        image.paste(frame, (x, y))
 
-            assembled = [
-                Image.new('RGBA', (max_width, total_height))
-                for i in range(max_frames)
-            ]
+                        x += frame.width
+                        max_height = max(max_height, frame.height)
 
-            print('builing image...')
-            y = 0
-            for row in images_frames:
-                x = 0
-                for frames in row:
-                    for i in range(max_frames):
-                        assembled[i].paste(frames[i % len(frames)], (x, y))
-                    x += frames[0].width
-                y += max(map(lambda f: f[0].height, row))
+                    y += max_height
 
-            print('dump {}...'.format(max_frames))
+                assembled.append(image)
+
+            _, file_name = mkstemp()
+
             if max_frames == 1:
-                file_name = '{}.png'.format(mkstemp()[1])
+                file_name = '{}.png'.format(file_name)
                 assembled[0].save(file_name)
             else:
                 d = mkdtemp()
@@ -173,8 +214,7 @@ class EmoteStore:
                     name = os.path.join(d, '{}.png'.format(i))
                     img.save(name)
                     pngs.append(name)
-                print('convert...')
-                file_name = '{}.gif'.format(mkstemp()[1])
+                file_name = '{}.gif'.format(file_name)
                 command = ['convert', '-delay', '5', '-dispose', 'previous', '-loop', '0', '-strip'] + pngs + [file_name]
                 call(command)
                 call(['du', '-sm', file_name])
