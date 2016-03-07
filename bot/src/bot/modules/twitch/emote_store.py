@@ -181,6 +181,8 @@ class EmoteStore:
             max_width = max(max_width, width)
             total_height += max_height
 
+        max_frames = min(max_frames, 20)
+
         if images:
 
             assembled = []
