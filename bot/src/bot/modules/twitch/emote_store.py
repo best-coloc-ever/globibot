@@ -140,12 +140,14 @@ class EmoteStore:
             return file_name
 
         # Prefetch images
-        tasks = []
+        tasks = set()
         for row in emote_layout:
             for emote in row:
-                tasks.append(asyncio.ensure_future(self.get(emote, size)))
+                tasks.add((emote, size))
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(
+            *list(map(lambda x: asyncio.ensure_future(self.get(*x)), tasks))
+        )
 
         # Build the canvas
         images = []
