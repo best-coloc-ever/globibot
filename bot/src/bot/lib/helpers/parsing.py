@@ -36,6 +36,7 @@ some_type = lambda t: p.some(lambda tok: tok.type == t)
 any_type = p.some(lambda _: True)
 
 maybe = p.maybe
+eof = p.finished
 many = lambda parser: p.many(parser) >> to_a
 integer = some_type(TokenType.Integer) >> to_i
 word = some_type(TokenType.Word) >> to_s

@@ -9,6 +9,7 @@ services:
     build: ./bot
     volumes:
       - './bot/:/app:ro'
+      - '/var/run/docker.sock:/var/run/docker.sock'
 
   db:
     image: mongo

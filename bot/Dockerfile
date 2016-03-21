@@ -10,7 +10,8 @@ RUN pip install \
     youtube-dl \
     pymongo \
     pyyaml \
-    pillow
+    pillow \
+    docker-py
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \

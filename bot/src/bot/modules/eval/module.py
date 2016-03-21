@@ -1,0 +1,173 @@
+from bot.lib.module import Module
+from bot.lib.decorators import simple_command, command
+from bot.lib.helpers import parsing as p
+
+from . import constants as c
+
+from collections import defaultdict
+from time import time
+
+import asyncio
+import docker
+
+class Eval(Module):
+
+    class Timeout(Exception):
+        pass
+
+    class Behavior:
+        Auto = 'auto'
+        Ask = 'ask'
+        Off = 'off'
+
+    BEHAVIORS = [
+        Behavior.Auto,
+        Behavior.Ask,
+        Behavior.Off,
+    ]
+
+    WORK_DIR = '/app'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.user_behaviors = defaultdict(lambda: Eval.Behavior.Ask)
+        self.behaviors = {
+            Eval.Behavior.Auto: self.eval_code,
+            Eval.Behavior.Ask: self.ask_for_eval,
+            Eval.Behavior.Off: self.ignore,
+        }
+        self.user_snippets = dict()
+
+        self.language_map = {
+            'python': lambda code: self.simple_eval_container('python:3.5', ('python3', '-c', code)),
+            'ruby': lambda code: self.simple_eval_container('ruby:2.3', ('ruby', '-e', code)),
+            'c': lambda code: self.file_eval_container(code, 'c', 'gcc:5.3', 'gcc {file} && ./a.out'),
+            'cpp': lambda code: self.file_eval_container(code, 'cpp', 'gcc:5.3', 'g++ {file} && ./a.out'),
+            'haskell': lambda code: self.file_eval_container(code, 'hs', 'haskell:7.10', 'ghc {file} && ./main'),
+            'javascript': lambda code: self.file_eval_container(code, 'js', 'remnux/v8', 'd8 {file}'),
+            'php': lambda code: self.file_eval_container(code, 'php', 'php:7.0', 'php {file}'),
+            'java': lambda code: self.file_eval_container(code, 'java', 'java:9', 'javac {file} && jar -cf app.jar main.class && java -cp app.jar main'),
+            'go': lambda code: self.file_eval_container(code, 'go', 'golang:1.6', 'go build && ./app'),
+            'brainfuck': lambda code: self.file_eval_container(code, 'b', 'globidocker/brainfuck', 'bfc {file} && ./a.out'),
+        }
+
+        self.client = docker.Client()
+        self.timeout = c.DEFAULT_TIMEOUT
+
+    def simple_eval_container(self, image, command):
+        return self.client.create_container(
+            image=image,
+            command=command,
+            user='root',
+            working_dir=Eval.WORK_DIR
+        )
+
+    def file_eval_container(self, code, extension, image, command):
+        file_name = '{}/main.{}'.format(Eval.WORK_DIR, extension)
+        shell_escape = lambda string: '"{}"'.format(string.replace('"', '\\"'))
+        shell_command = ' '.join([
+            'echo', shell_escape(code), '>', file_name, '&&',
+            command.format(file=file_name)
+        ])
+
+        return self.simple_eval_container(image, ('bash', '-c', shell_command))
+
+    @simple_command('```{language:w}\n{code}\n```')
+    async def on_code_block(self, message, language, code):
+        language = language.lower()
+        # Ensure language is supported
+        if language not in self.language_map:
+            return
+        # Save snippet for user
+        self.user_snippets[message.author.id] = (language, code)
+        # Act according to its eval behavior
+        user_behavior = self.user_behaviors[message.author.id]
+        action = self.behaviors[user_behavior]
+        await action(message, language, code)
+
+    async def eval_code(self, message, language, code):
+        computing_message = await self.send_message(
+            message.channel,
+            'Computing...',
+        )
+
+        container_builder = self.language_map[language]
+
+        container = container_builder(code)
+        await self.eval_container(computing_message, container)
+
+    async def ask_for_eval(self, message, language, code):
+        await self.send_message(
+            message.channel,
+            '{} I saved your `{}` snippet, you can evaluate it with `!eval`'
+                .format(message.author.mention, language)
+        )
+
+    async def ignore(self, *args):
+        pass
+
+    @command(p.string('!eval') + p.eof)
+    async def eval_request(self, message):
+        try:
+            language, code = self.user_snippets[message.author.id]
+            await self.eval_code(message, language, code)
+        except KeyError:
+            await self.send_message(
+                message.channel,
+                '{}: You have no registered snippets'
+                    .format(message.author.mention)
+            )
+
+    behavior = p.one_of(p.string, *BEHAVIORS) >> p.to_s
+    @command(p.string('!eval') + p.bind(behavior, 'behavior'))
+    async def change_eval_behavior(self, message, behavior):
+        self.user_behaviors[message.author.id] = behavior
+        await self.send_message(
+            message.channel,
+            '{} your eval behavior is now set to `{}`'
+                .format(message.author.mention, behavior)
+        )
+
+    @command(p.string('!eval') + p.string('languages'))
+    async def list_languages(self, message):
+        await self.send_message(
+            message.channel,
+            'I support the following languages:\n'
+            '```\n'
+            '{}\n'
+            '```'
+                .format('\n'.join(sorted(self.language_map.keys())))
+        )
+
+    async def wait_for_container(self, container):
+        started = time()
+
+        while True:
+            await asyncio.sleep(0.5)
+            state = self.client.inspect_container(container)
+            if not state['State']['Running']:
+                break
+            if time() - started > self.timeout:
+                raise Eval.Timeout
+
+    async def eval_container(self, message, container):
+        self.debug('starting eval container: {}'.format(container))
+        self.client.start(container)
+
+        try:
+            await self.wait_for_container(container)
+        except Eval.Timeout:
+            await self.bot.edit_message(
+                message,
+                'Evaluation timed out after {} seconds'.format(self.timeout)
+            )
+        else:
+            logs = self.client.logs(container)
+            await self.bot.edit_message(
+                message,
+                '{}'.format(logs.decode('utf-8'))
+            )
+        finally:
+            self.client.remove_container(container, force=True, v=True)
+
