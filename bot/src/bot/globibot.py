@@ -79,7 +79,14 @@ class Globibot(DiscordClient):
     async def on_message(self, message):
         if message.author.id != self.user.id: # ignoring our own messages
             if message.server in self.enabled_servers: # server filtering
-                logger.debug('Dispatching message "{}"'.format(message.content))
+                logger.debug(
+                    'Dispatching message from [{}, {}] "{}"'
+                        .format(
+                            message.author.name,
+                            message.author.id,
+                            message.content
+                        )
+                )
 
                 for module in self.modules:
                     future = module.dispatch(message)
