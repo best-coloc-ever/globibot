@@ -37,7 +37,8 @@ class Eval(Module):
             Eval.Behavior.Ask: self.ask_for_eval,
             Eval.Behavior.Off: self.ignore,
         }
-        self.user_snippets = dict()
+        self.user_snippets = defaultdict(dict)
+        self.user_last_snippets = dict()
 
         self.language_map = {
             'python': lambda code: self.simple_eval_container('python:3.5', ('python3', '-c', code)),
@@ -80,7 +81,7 @@ class Eval(Module):
         if language not in self.language_map:
             return
         # Save snippet for user
-        self.user_snippets[message.author.id] = (language, code)
+        self.user_last_snippets[message.author.id] = (language, code)
         # Act according to its eval behavior
         user_behavior = self.user_behaviors[message.author.id]
         action = self.behaviors[user_behavior]
@@ -108,9 +109,9 @@ class Eval(Module):
         pass
 
     @command(p.string('!eval') + p.eof)
-    async def eval_request(self, message):
+    async def eval_last_request(self, message):
         try:
-            language, code = self.user_snippets[message.author.id]
+            language, code = self.user_last_snippets[message.author.id]
             await self.eval_code(message, language, code)
         except KeyError:
             await self.send_message(
@@ -119,8 +120,20 @@ class Eval(Module):
                     .format(message.author.mention)
             )
 
+    @command(p.string('!eval') + p.bind(p.word, 'name') + p.eof)
+    async def eval_request(self, message, name):
+        try:
+            language, code = self.user_snippets[message.author.id][name]
+            await self.eval_code(message, language, code)
+        except KeyError:
+            await self.send_message(
+                message.channel,
+                '{}: You have no registered snippets named `{}`'
+                    .format(message.author.mention, name)
+            )
+
     behavior = p.one_of(p.string, *BEHAVIORS) >> p.to_s
-    @command(p.string('!eval') + p.bind(behavior, 'behavior'))
+    @command(p.string('!eval') + p.string('behavior') + p.bind(behavior, 'behavior'))
     async def change_eval_behavior(self, message, behavior):
         self.user_behaviors[message.author.id] = behavior
         await self.send_message(
@@ -139,6 +152,25 @@ class Eval(Module):
             '```'
                 .format('\n'.join(sorted(self.language_map.keys())))
         )
+
+    @command(p.string('!eval') + p.string('save') + p.bind(p.word, 'name'))
+    async def save_snippet(self, message, name):
+        user_id = message.author.id
+        try:
+            snippet = self.user_last_snippets[user_id]
+            self.user_snippets[user_id][name] = snippet
+            await self.send_message(
+                message.channel,
+                '{} Your last snippet is now registered under the name `{}`\n'
+                'You an invoke it with `!eval {}`'
+                    .format(message.author.mention, name, name)
+            )
+        except KeyError:
+            await self.send_message(
+                message.channel,
+                '{} I don\'t have any snippets from you'
+                    .format(message.author.mention)
+            )
 
     async def wait_for_container(self, container):
         started = time()
