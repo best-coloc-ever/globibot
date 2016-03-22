@@ -80,11 +80,12 @@ class Globibot(DiscordClient):
         if message.author.id != self.user.id: # ignoring our own messages
             if message.server in self.enabled_servers: # server filtering
                 logger.debug(
-                    'Dispatching message from [{}, {}] "{}"'
+                    'Dispatching message from [{}, {}] "{}" {}'
                         .format(
                             message.author.name,
                             message.author.id,
-                            message.content
+                            message.content,
+                            message.attachments
                         )
                 )
 
