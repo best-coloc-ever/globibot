@@ -94,9 +94,10 @@ class Eval(Module):
         )
 
         container_builder = self.language_map[language]
-
         container = container_builder(code)
-        await self.eval_container(computing_message, container)
+
+        await self.eval_container(message.channel, container)
+        await self.bot.delete_message(computing_message)
 
     async def ask_for_eval(self, message, language, code):
         await self.send_message(
@@ -183,23 +184,38 @@ class Eval(Module):
             if time() - started > self.timeout:
                 raise Eval.Timeout
 
-    async def eval_container(self, message, container):
+    async def eval_container(self, channel, container):
         self.debug('starting eval container: {}'.format(container))
         self.client.start(container)
 
         try:
             await self.wait_for_container(container)
         except Eval.Timeout:
-            await self.bot.edit_message(
-                message,
+            await self.bot.send_message(
+                channel,
                 'Evaluation timed out after {} seconds'.format(self.timeout)
             )
-        else:
-            logs = self.client.logs(container)
-            await self.bot.edit_message(
-                message,
-                '{}'.format(logs.decode('utf-8'))
-            )
         finally:
+            logs = self.client.logs(container, stream=True)
             self.client.remove_container(container, force=True, v=True)
+            lines = []
+            elided = False
+            for i, line in enumerate(logs):
+                if i >= c.MAX_OUTPUT_LINES:
+                    elided = True
+                    break
+                lines.append(line.decode('utf-8'))
+            if lines:
+                await self.bot.send_message(
+                    channel,
+                    '{}{}'.format(
+                        ''.join(lines),
+                        '`lines omitted...`' if elided else ''
+                    )
+                )
+            else:
+                await self.bot.send_message(
+                    channel,
+                    '`No output`'
+                )
 
