@@ -41,6 +41,7 @@ class Eval(Module):
         self.user_last_snippets = dict()
 
         self.language_map = {
+            'rust': lambda code: self.file_eval_container(code, 'rs', 'schickling/rust', 'rustc {file} && ./main'),
             'python': lambda code: self.simple_eval_container('python:3.5', ('python3', '-c', code)),
             'ruby': lambda code: self.simple_eval_container('ruby:2.3', ('ruby', '-e', code)),
             'c': lambda code: self.file_eval_container(code, 'c', 'gcc:5.3', 'gcc {file} && ./a.out'),
