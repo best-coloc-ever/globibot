@@ -58,12 +58,18 @@ class Eval(Module):
         self.timeout = c.DEFAULT_TIMEOUT
 
     def simple_eval_container(self, image, command):
-        return self.client.create_container(
+        container = self.client.create_container(
             image=image,
             command=command,
             user='root',
-            working_dir=Eval.WORK_DIR
+            working_dir=Eval.WORK_DIR,
         )
+        self.client.update_container(
+            container,
+            cpuset_cpus=c.CPU_SET
+        )
+
+        return container
 
     def file_eval_container(self, code, extension, image, command):
         file_name = '{}/main.{}'.format(Eval.WORK_DIR, extension)

@@ -1,1 +1,3 @@
-DEFAULT_TIMEOUT = 5 # seconds
+DEFAULT_TIMEOUT = 60 # seconds
+MAX_OUTPUT_LINES = 20
+CPU_SET = "0"

@@ -11,7 +11,7 @@ RUN pip install \
     pymongo \
     pyyaml \
     pillow \
-    docker-py
+    git+https://github.com/docker/docker-py@master
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
