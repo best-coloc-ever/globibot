@@ -5,6 +5,7 @@ from .dj.module import Dj
 from .giveaway.module import Giveaway
 from .github.module import Github
 from .eval.module import Eval
+from .stats.module import Stats
 
 from utils.logging import logger
 
@@ -16,6 +17,7 @@ MODULE_CLASSES_BY_NAME = {
     'giveaway': Giveaway,
     'github'  : Github,
     'eval'    : Eval,
+    'stats'   : Stats,
 }
 
 def module_class_by_name(name):
