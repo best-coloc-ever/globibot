@@ -17,3 +17,11 @@ services:
     image: postgres
     volumes:
       - 'globibot-data:/var/lib/postgresql/data'
+
+  web:
+    image: nginx
+    ports:
+      - '1337:80'
+    volumes:
+      - './web/:/web:ro'
+      - './web/nginx.conf:/etc/nginx/nginx.conf'

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>TEST</title>
+
+    <script src="//code.jquery.com/jquery-1.12.0.min.js"></script>
+  </head>
+
+  <body>
+
+    <my-tag></my-tag>
+
+    <script src="my-tag.tag" type="riot/tag"></script>
+    <script src="https://cdn.jsdelivr.net/riot/2.3.17/riot+compiler.min.js"></script>
+
+    <script>
+      $.ajax({
+        url: '/bot/stats/143032611814637568'
+      }).done(function(data) {
+        riot.mount('my-tag', {
+          title: data
+        });
+      })
+    </script>
+
+  </body>
+</html>
