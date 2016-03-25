@@ -8,7 +8,7 @@ RUN pip install \
     funcparserlib \
     twitter \
     youtube-dl \
-    pymongo \
+    psycopg2 \
     pyyaml \
     pillow \
     git+https://github.com/docker/docker-py@master
