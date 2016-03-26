@@ -7,6 +7,11 @@ bot:
     # dj:       {}
     # giveaway: {}
     # github:   {}
+    # eval: {}
+    # stats: {}
+    # personal:
+    #   google_api_key: null
+    #   google_search_engine_cx: null
     # twitter:
     #   consumer_key: null
     #   consumer_secret: null
