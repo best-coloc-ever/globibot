@@ -48,6 +48,10 @@ on_off_switch = (
     (string('off') >> const(False))
 )
 
+url = p.some(
+    lambda tok: tok.type == TokenType.Word and tok.value.startswith('http')
+)
+
 def int_range(low, high):
 
     def predicate(token):
