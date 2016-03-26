@@ -33,7 +33,7 @@ class Dj(Module):
         self.blacklist = set()
         self.blacklisted_songs = set()
 
-    def on_message(self, message):
+    async def on_message(self, message):
         if self.queue_display and message.channel == self.invoked_channel:
             self.queue_display.pull_down()
 
