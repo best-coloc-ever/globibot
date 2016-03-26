@@ -47,11 +47,11 @@ class Module:
         except Exception as e:
             self.error('Failed to send message: {}'.format(e))
 
-    async def send_file(self, channel, file_path, clear=0):
+    async def send_file(self, channel, file_path, content='', clear=0):
         self.debug('Sending file: "{}"'.format(file_path))
 
         try:
-            message = await self.bot.send_file(channel, file_path)
+            message = await self.bot.send_file(channel, file_path, content=content)
             self.process_message(message, clear)
             return message
         except Forbidden:
