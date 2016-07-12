@@ -49,7 +49,7 @@ class Eval(Module):
             'haskell': lambda code: self.file_eval_container(code, 'hs', 'haskell:7.10', 'ghc {file} && ./main'),
             'javascript': lambda code: self.file_eval_container(code, 'js', 'remnux/v8', 'd8 {file}'),
             'php': lambda code: self.file_eval_container(code, 'php', 'php:7.0', 'php {file}'),
-            'java': lambda code: self.file_eval_container(code, 'java', 'java:9', 'javac {file} && jar -cf app.jar main.class && java -cp app.jar main'),
+            'java': lambda code: self.file_eval_container(code, 'java', 'java:9', 'javac {file} && java main'),
             'go': lambda code: self.file_eval_container(code, 'go', 'golang:1.6', 'go build && ./app'),
             'brainfuck': lambda code: self.file_eval_container(code, 'b', 'globidocker/brainfuck', 'bfc {file} && ./a.out'),
         }
