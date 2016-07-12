@@ -52,6 +52,8 @@ class Eval(Module):
             'java': lambda code: self.file_eval_container(code, 'java', 'java:9', 'javac {file} && java main'),
             'go': lambda code: self.file_eval_container(code, 'go', 'golang:1.6', 'go build && ./app'),
             'brainfuck': lambda code: self.file_eval_container(code, 'b', 'globidocker/brainfuck', 'bfc {file} && ./a.out'),
+            'C#': lambda code: self.file_eval_container(code, 'cs', 'microsoft/dotnet', 'mv main.cs Program.cs && dotnet build > /dev/null && dotnet run'),
+            'asm': lambda code: self.file_eval_container(code, 'asm', 'nasm', 'nasm -f elf64 {file} -o main.o && gcc main.o -nostdlib && ./a.out'),
         }
 
         self.client = docker.Client()
