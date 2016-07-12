@@ -45,7 +45,7 @@ class Eval(Module):
             'python': lambda code: self.simple_eval_container('python:3.5', ('python3', '-c', code)),
             'ruby': lambda code: self.simple_eval_container('ruby:2.3', ('ruby', '-e', code)),
             'c': lambda code: self.file_eval_container(code, 'c', 'gcc:5.3', 'gcc {file} && ./a.out'),
-            'cpp': lambda code: self.file_eval_container(code, 'cpp', 'gcc:5.3', 'g++ {file} && ./a.out'),
+            'cpp': lambda code: self.file_eval_container(code, 'cpp', 'gcc:5.3', 'g++ -std=c++1z {file} && ./a.out'),
             'haskell': lambda code: self.file_eval_container(code, 'hs', 'haskell:7.10', 'ghc {file} && ./main'),
             'javascript': lambda code: self.file_eval_container(code, 'js', 'remnux/v8', 'd8 {file}'),
             'php': lambda code: self.file_eval_container(code, 'php', 'php:7.0', 'php {file}'),
