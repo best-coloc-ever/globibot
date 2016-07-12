@@ -74,14 +74,27 @@ class Eval(Module):
         return container
 
     def file_eval_container(self, code, extension, image, command):
+        with open('/tmp/bot/main.{}'.format(extension), 'w') as f:
+            f.write(code)
         file_name = '{}/main.{}'.format(Eval.WORK_DIR, extension)
-        shell_escape = lambda string: '"{}"'.format(string.replace('"', '\\"'))
-        shell_command = ' '.join([
-            'echo', shell_escape(code), '>', file_name, '&&',
-            command.format(file=file_name)
-        ])
 
-        return self.simple_eval_container(image, ('bash', '-c', shell_command))
+        container = self.client.create_container(
+            image=image,
+            command='bash -c "{}"'.format(command.format(file=file_name)),
+            user='root',
+            working_dir=Eval.WORK_DIR,
+            host_config=self.client.create_host_config(binds={
+                '/tmp/bot/'.format(extension): {
+                    'bind': Eval.WORK_DIR,
+                },
+            })
+        )
+        self.client.update_container(
+            container,
+            cpuset_cpus=c.CPU_SET
+        )
+
+        return container
 
     @simple_command('```{language:w}\n{code}\n```')
     async def on_code_block(self, message, language, code):
