@@ -4,6 +4,7 @@ import sys
 CONFIG_FILE = 'config.yaml'
 BOT_CONFIG_KEY = 'bot'
 WEB_CONFIG_KEY = 'web'
+DB_CONFIG_KEY = 'db'
 
 def load(file):
     try:
@@ -32,6 +33,7 @@ config = load(CONFIG_FILE)
 try:
     bot_config = config[BOT_CONFIG_KEY]
     web_config = config[WEB_CONFIG_KEY]
+    db_config  = config[DB_CONFIG_KEY]
 except KeyError as e:
     sys.exit(
         'Missing top level configuration key: "{}"'

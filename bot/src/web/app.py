@@ -18,7 +18,6 @@ def init_web_app(config):
     return WebApplication(
         port,
         routes,
-        autoreload=True,
     )
 
 class WebApplication(web.Application):

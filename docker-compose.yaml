@@ -7,21 +7,23 @@ services:
 
   bot:
     build: ./bot
-    ports:
-      - '8080:8080'
     volumes:
-      - './bot/:/app:ro'
-      - '/var/run/docker.sock:/var/run/docker.sock'
+      - './bot/:/app:ro' # Sources
+      - '/var/run/docker.sock:/var/run/docker.sock' # Make the use of the host's docker daemon possible
+      - '/tmp/globibot:/tmp/globibot' # Shared host storage (to solve inceptive docker volumes issues)
 
   db:
-    image: postgres
+    build: ./db
     volumes:
+      # Main data volume
       - 'globibot-data:/var/lib/postgresql/data'
+      # migration system
+      - './db/migrate:/flyway/sql'
+      - './db/flyway.conf:/flyway/conf/flyway.conf'
 
   web:
-    image: nginx
+    build: ./web
     ports:
-      - '1337:80'
+      - '443:443'
     volumes:
-      - './web/:/web:ro'
-      - './web/nginx.conf:/etc/nginx/nginx.conf'
+      - './web/static:/static:ro'

@@ -2,7 +2,7 @@ FROM python:3.5
 
 RUN pip install --upgrade pip
 RUN pip install \
-    git+https://github.com/Rapptz/discord.py@async \
+    discord.py \
     tornado \
     parse \
     funcparserlib \
@@ -11,7 +11,9 @@ RUN pip install \
     psycopg2 \
     pyyaml \
     pillow \
-    git+https://github.com/docker/docker-py@master
+    pynacl \
+    git+https://github.com/docker/docker-py@master \
+    watchdog
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \

@@ -14,4 +14,5 @@ script:
   - docker --version
   - docker-compose --version
   - sudo docker daemon & sleep 5
+  - touch web/placeholder.pem
   - docker-compose up -d

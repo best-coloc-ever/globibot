@@ -1,16 +1,23 @@
 from funcparserlib.lexer import make_tokenizer
 from funcparserlib import parser as p
 
+from collections import namedtuple
+from re import DOTALL
+
 class TokenType:
     Space = 'SPACE'
     Integer = 'INTEGER'
     Mention = 'MENTION'
+    Channel = 'CHANNEL'
+    Snippet = 'SNIPPET'
     Word = 'WORD'
 
 TOKEN_SPEC = [
     (TokenType.Space,   (r'\s+',)),
     (TokenType.Integer, (r'[0-9]+',)),
-    (TokenType.Mention, (r'<@[0-9]+>',)),
+    (TokenType.Mention, (r'<@!?[0-9]+>',)),
+    (TokenType.Channel, (r'<#[0-9]+>',)),
+    (TokenType.Snippet, (r'```\S+\n(.*?)```', DOTALL)),
     (TokenType.Word,    (r'\S+',)), # Word is currently a catch-all
 ]
 
@@ -26,21 +33,42 @@ def tokenize(string, tokenizer=default_tokenizer, ignores=(TokenType.Space,)):
 to_i = lambda tok: int(tok.value)
 to_s = lambda tok: str(tok.value)
 to_a = lambda toks: [tok.value for tok in toks]
-extract_mention_id = lambda tok: int(tok.value[2:-1])
 const = lambda value: lambda _: value
 
-# Parsers
-a = lambda value: p.some(lambda tok: tok.value == value)
-string = lambda s: p.some(lambda tok: tok.value.lower() == s.lower())
-some_type = lambda t: p.some(lambda tok: tok.type == t)
-any_type = p.some(lambda _: True)
+def extract_mention_id(tok):
+    if '!' in tok.value:
+        return int(tok.value[3:-1])
+    else:
+        return int(tok.value[2:-1])
 
-maybe = p.maybe
-eof = p.finished
-many = lambda parser: p.many(parser) >> to_a
-integer = some_type(TokenType.Integer) >> to_i
-word = some_type(TokenType.Word) >> to_s
-mention = some_type(TokenType.Mention) >> extract_mention_id
+def extract_channel_id(tok):
+    return int(tok.value[2:-1])
+
+Snippet = namedtuple('Snippet', ['language', 'code'])
+def extract_snippet(tok):
+    val = tok.value
+    new_line_idx = val.index('\n')
+
+    return Snippet(
+        language = val[3:new_line_idx].lower(),
+        code     = val[new_line_idx + 1:-3]
+    )
+
+# Parsers
+a         = lambda value: p.some(lambda tok: tok.value == value)
+string    = lambda s: p.some(lambda tok: tok.value.lower() == s.lower()).named(s)
+some_type = lambda t: p.some(lambda tok: tok.type == t)
+any_type  = p.some(lambda _: True)
+
+eof   = p.finished                              .named('')
+maybe = lambda parser: p.maybe(parser)          .named('[{}]'.format(parser.name))
+many  = lambda parser: (p.many(parser) >> to_a) .named('{}...'.format(parser.name))
+
+integer = (some_type(TokenType.Integer) >> to_i)               .named('N')
+word    = (some_type(TokenType.Word)    >> to_s)               .named('W')
+mention = (some_type(TokenType.Mention) >> extract_mention_id) .named('M')
+channel = (some_type(TokenType.Channel) >> extract_channel_id) .named('C')
+snippet = (some_type(TokenType.Snippet) >> extract_snippet)    .named('S')
 
 # High level helpers
 on_off_switch = (
@@ -74,4 +102,4 @@ class BoundPair(tuple): pass
 
 def bind(transformed, name):
     bind_expr = lambda value: BoundPair((name, value)) if value is not None else None
-    return transformed >> bind_expr
+    return (transformed >> bind_expr).named('<{}#{}>'.format(name, transformed.name))
