@@ -1,12 +1,11 @@
-from ..errors import ModuleException
-from ..discord import EMOTES
+from ..errors import PluginException
 
-class NotMasterError(ModuleException):
+class NotMasterError(PluginException):
 
     def error(self, message):
-        return '{} You\'re not the boss of me {}'.format(
-            message.author.mention,
-            EMOTES.LirikNot
+        return (
+            '{} You\'re not the boss of me'
+                .format(message.author.mention)
         )
 
 def master_only(bot, message):
