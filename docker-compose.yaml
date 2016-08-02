@@ -7,8 +7,6 @@ services:
 
   bot:
     build: ./bot
-    ports:
-      - '8080:8080'
     volumes:
       - './bot/:/app:ro'
       - '/var/run/docker.sock:/var/run/docker.sock'
