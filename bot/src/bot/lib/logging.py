@@ -1,7 +1,7 @@
 import logging
 import sys
 
-formatter = logging.Formatter('[%(asctime)s -- %(levelname)s -- %(module_name)s]\t%(message)s')
+formatter = logging.Formatter('[%(asctime)s -- %(levelname)s -- %(plugin_name)s]\t%(message)s')
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(formatter)
