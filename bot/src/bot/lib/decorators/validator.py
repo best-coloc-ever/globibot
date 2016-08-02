@@ -19,4 +19,7 @@ def validator(validate, pre_hook=NO_HOOK, **kwargs):
 
         return call
 
+    # For introspection
+    validate.pre_hook = pre_hook
+
     return wrapped

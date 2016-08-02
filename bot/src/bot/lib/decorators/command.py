@@ -22,4 +22,7 @@ def command(parser, *args, **kwargs):
         except NoParseError:
             return False, {}
 
+    # For introspection
+    validate_parser.parser = parser
+
     return validator(validate_parser, *args, **kwargs)
