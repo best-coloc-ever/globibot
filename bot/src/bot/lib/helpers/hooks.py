@@ -9,5 +9,9 @@ class NotMasterError(PluginException):
         )
 
 def master_only(bot, message):
+    return bot.is_master(message.author)
+
+def master_only_verbose(bot, message):
     if not bot.is_master(message.author):
         raise NotMasterError
+    return True
