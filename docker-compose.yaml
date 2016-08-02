@@ -8,8 +8,9 @@ services:
   bot:
     build: ./bot
     volumes:
-      - './bot/:/app:ro'
-      - '/var/run/docker.sock:/var/run/docker.sock'
+      - './bot/:/app:ro' # Sources
+      - '/var/run/docker.sock:/var/run/docker.sock' # Make the use of the host's docker daemon possible
+      - '/tmp/globibot:/tmp/globibot' # Shared host storage (to solve inceptive docker volumes issues)
 
   db:
     build: ./db
