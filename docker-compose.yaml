@@ -22,9 +22,8 @@ services:
       - './db/flyway.conf:/flyway/conf/flyway.conf'
 
   web:
-    image: nginx
+    build: ./web
     ports:
-      - '1337:80'
+      - '443:443'
     volumes:
-      - './web/:/web:ro'
-      - './web/nginx.conf:/etc/nginx/nginx.conf'
+      - './web/static:/static:ro'
