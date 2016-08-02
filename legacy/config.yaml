@@ -1,0 +1,28 @@
+bot:
+  token: 'MTY4MzA0Nzg4NDY1OTA5NzYw.Cn08Qw.rqt0cpq0h0JFRbSquSShnu9qQ4Q'
+  modules:
+    repost: {}
+    # hello:    {}
+    # twitch:   {}
+    dj:       {}
+    # giveaway: {}
+    # github:   {}
+    eval: {}
+    stats: {}
+    # personal:
+    #   google_api_key: 'AIzaSyClqfOZfsxj2ZKY7hMAGXOH8WU7y08gaqM'
+    #   google_search_engine_cx: '013914993971098352441:nu9vrgrd500'
+    # twitter:
+    #   consumer_key: null
+    #   consumer_secret: null
+    #   access_token: null
+    #   access_token_secret: null
+  servers:
+    - TestBot
+    - Lirik's Kitty Lounge
+    # - DatColoc
+  masters:
+    - 89108411861467136
+
+web:
+  port: 8080
