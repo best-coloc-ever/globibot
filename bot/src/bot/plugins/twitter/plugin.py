@@ -4,6 +4,7 @@ from bot.lib.decorators import command
 from bot.lib.helpers import parsing as p
 from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
+from bot.lib.helpers.async_iterator import AsyncIterator
 
 from . import constants as c
 from . import queries as q
@@ -120,7 +121,7 @@ class Twitter(Plugin):
                     serv for serv in self.bot.servers
                     if serv.id == str(channel.server_id)
                 )
-                future = self.monitor_channel(channel.user_id, server)
+                future = self.monitor_forever(channel.user_id, server)
                 asyncio.ensure_future(future)
 
     '''
@@ -142,24 +143,22 @@ class Twitter(Plugin):
         except:
             return None
 
-    async def monitor_channel(self, user_id, server):
-
+    async def monitor_forever(self, user_id, server):
         while True:
-            self.info('Building stream iterator')
-            stream = TwitterStream(auth=self.oauth, block=False)
-            iterator = stream.statuses.filter(follow=user_id)
+            self.debug('Looking for new tweets from {} now'.format(user_id))
 
-            for tweet in iterator:
+            stream = TwitterStream(auth=self.oauth)
+            iterator = AsyncIterator()
+            iterator.start(stream.statuses.filter, follow=user_id)
+
+            async for tweet in iterator:
+                self.debug(tweet)
                 if tweet and 'text' in tweet:
-                    self.debug(tweet)
                     if tweet['user']['id'] == user_id:
                         await self.send_message(
                             server.default_channel,
                             format_tweet(tweet)
                         )
-                self.debug('{}: No new tweet'.format(user_id))
-                await asyncio.sleep(15)
 
-            self.info('Stream iterator hung up')
+            self.debug('Hangup, reconnecting in 15...')
             await asyncio.sleep(15)
-
