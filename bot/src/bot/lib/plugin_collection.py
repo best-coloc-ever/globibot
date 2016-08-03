@@ -26,6 +26,7 @@ class PluginReloader(FileSystemEventHandler):
         self.plugin = None
         self.module_imported = False
 
+    def initialize(self):
         unsafe(self.load_plugin)
 
     def load_plugin(self):
@@ -77,6 +78,10 @@ class PluginCollection:
                 path_join(plugins_root.__path__._path[0], name),
                 recursive=True
             )
+
+    def load_plugins(self):
+        for reloader in self.plugin_reloaders:
+            reloader.initialize()
 
         self.path_observer.start()
 

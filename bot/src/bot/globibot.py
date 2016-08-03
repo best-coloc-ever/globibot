@@ -40,6 +40,8 @@ class Globibot(DiscordClient):
                 .format(self.user.id)
         )
 
+        self.plugin_collection.load_plugins()
+
     async def on_message(self, message):
         self.debug_message(message, 'received')
         self._dispatch(Plugin.dispatch_new, message)
