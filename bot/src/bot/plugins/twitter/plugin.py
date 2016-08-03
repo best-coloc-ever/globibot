@@ -7,6 +7,7 @@ from bot.lib.helpers.hooks import master_only
 
 from . import constants as c
 from . import queries as q
+from . import errors as e
 
 from twitter import Twitter as TwitterAPI
 from twitter import TwitterStream
@@ -58,22 +59,14 @@ class Twitter(Plugin):
     )
     async def last_tweet(self, message, screen_name):
         user = self.get_user(screen_name=screen_name)
+        tweets = self.get_tweets(user, count=1)
 
-        if user is None:
+        if tweets:
             await self.send_message(
                 message.channel,
-                'Unable to find a channel named `{}`'.format(screen_name),
-                delete_after=5
+                format_tweet(tweets[0]),
+                delete_after=60
             )
-        else:
-            tweets = self.get_tweets(user, count=1)
-
-            if tweets:
-                await self.send_message(
-                    message.channel,
-                    format_tweet(tweets[0]),
-                    delete_after=60
-                )
 
     @command(
         twitter_prefix + p.string('monitor') + p.bind(p.word, 'screen_name'),
@@ -81,21 +74,17 @@ class Twitter(Plugin):
     )
     async def monitor(self, message, screen_name):
         user = self.get_user(screen_name=screen_name)
+        user_id = user['id']
 
-        if user is None:
-            await self.send_message(
-                message.channel,
-                'Unable to find a channel named `{}`'.format(screen_name),
-                delete_after=5
-            )
-        else:
-            with self.transaction() as trans:
-                trans.execute(q.add_monitored, dict(
-                    user_id   = user['id'],
-                    server_id = message.server.id
-                ))
-            future = self.monitor_channel(user['id'], message.server)
+        with self.transaction() as trans:
+            trans.execute(q.add_monitored, dict(
+                user_id   = user_id,
+                server_id = message.server.id
+            ))
+
+            future = self.monitor_forever(user_id, message.server)
             asyncio.ensure_future(future)
+
             await self.send_message(
                 message.channel,
                 'Now monitoring `{}` tweets'.format(screen_name),
@@ -138,12 +127,11 @@ class Twitter(Plugin):
     Details
     '''
 
-    def get_user(self, **kwargs):
+    def get_user(self, screen_name):
         try:
-            return self.client.users.lookup(**kwargs)[0]
-        except Exception as e:
-            self.error(e)
-            return None
+            return self.client.users.lookup(screen_name=screen_name)[0]
+        except Exception:
+            raise e.UserNotFound(screen_name)
 
     def get_tweets(self, user, count):
         try:
