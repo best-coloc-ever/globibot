@@ -1,8 +1,7 @@
-from docker import Client as DockerClient
+from bot.lib.helpers.async_iterator import AsyncIterator
 
+from docker import Client as DockerClient
 from time import time
-from queue import Queue
-from threading import Thread
 
 import asyncio
 
@@ -18,8 +17,9 @@ class AsyncDockerClient(DockerClient):
         super().__init__(*args, **kwargs)
 
     def async_build(self, *args, **kwargs):
-        iterator = StreamIterator()
+        iterator = AsyncIterator()
         iterator.start(self.build, *args, **kwargs)
+
         return iterator
 
     def run_async(self, directory, image, code):
@@ -32,9 +32,10 @@ class AsyncDockerClient(DockerClient):
         )
         self.start(container)
 
-        iterator = StreamIterator()
+        iterator = AsyncIterator()
         executor = iterator.start(self.logs, container, stream=True)
         asyncio.ensure_future(self.poll_container(container, executor))
+
         return iterator
 
     async def poll_container(self, container, executor):
@@ -51,41 +52,3 @@ class AsyncDockerClient(DockerClient):
                 break
 
         self.remove_container(container, force=True, v=True)
-
-class StreamIterator:
-
-    def __init__(self):
-        self.queue = Queue()
-        self.thread = None
-        self.done = False
-        self.throw_on_exit = None
-
-    def start(self, call, *args, **kwargs):
-
-        def run():
-            for line in call(*args, **kwargs):
-                self.queue.put(line)
-            self.done = True
-
-        self.thread = Thread(target=run)
-        self.thread.start()
-
-        return self
-
-    def throw(self, cls):
-        self.throw_on_exit = cls
-
-    async def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        while self.queue.empty():
-            if self.done:
-                if self.throw_on_exit:
-                    raise self.throw_on_exit
-                raise StopAsyncIteration
-            await asyncio.sleep(.5)
-
-        item = self.queue.get()
-        self.queue.task_done()
-        return item
