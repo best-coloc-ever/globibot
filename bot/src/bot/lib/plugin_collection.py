@@ -24,7 +24,7 @@ class PluginReloader(FileSystemEventHandler):
         self.scope = '{}.{}'.format(plugins_root.__name__, name)
         self.import_args = ('.{}'.format(name), plugins_root.__name__)
         self.plugin = None
-        self.loaded = False
+        self.module_imported = False
 
         unsafe(self.load_plugin)
 
@@ -32,19 +32,23 @@ class PluginReloader(FileSystemEventHandler):
         logger.info('Loading plugin: {}...'.format(self.name))
 
         self.module = import_module(*self.import_args)
-        self.loaded = True
+        self.module_imported = True
         self.plugin = self.module.plugin_cls(*self.args)
-        logger.info('...done')
+        self.plugin.load()
 
     def reload_plugin(self):
-        logger.info('reloading {}...'.format(self.module))
+        logger.info('Unloading plugin: {}'.format(self.name))
+        self.plugin.unload()
 
+        logger.info('Reloading module: {}...'.format(self.module))
         self.reload_module(self.module)
+
+        logger.info('Loading plugin: {}'.format(self.name))
         self.plugin = self.module.plugin_cls(*self.args)
-        logger.info('...done')
+        self.plugin.load()
 
     def on_modified(self, modified):
-        if self.loaded:
+        if self.module_imported:
             unsafe(self.reload_plugin)
         else:
             unsafe(self.load_plugin)

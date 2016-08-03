@@ -28,6 +28,9 @@ class Plugin:
         self.error    = partial(self.log, logging.ERROR)
         self.critical = partial(self.log, logging.CRITICAL)
 
+    def load(self): pass
+    def unload(self): pass
+
     '''
     Helpers
     '''
