@@ -5,6 +5,7 @@ from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
 
 from io import BytesIO
+from shutil import rmtree
 from collections import namedtuple
 
 from .docker import AsyncDockerClient
@@ -87,6 +88,8 @@ class Eval(Plugin):
                 await self.send_message(message.channel, '`Exited`', delete_after=10)
             except AsyncDockerClient.Timeout:
                 await self.send_message(message.channel, '`Evaluation timed out`')
+
+            rmtree(directory)
 
     eval_env_prefix = eval_prefix + p.string('env')
 
