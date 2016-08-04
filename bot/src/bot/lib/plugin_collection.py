@@ -5,10 +5,12 @@ from importlib import import_module, reload
 from traceback import format_exc
 from os.path import join as path_join
 from types import ModuleType
+from queue import Queue
 
 from utils.logging import logger
-
 import bot.plugins as plugins_root
+
+import asyncio
 
 def unsafe(action, *args, **kwargs):
     try:
@@ -23,8 +25,15 @@ class PluginReloader(FileSystemEventHandler):
         self.args = args
         self.scope = '{}.{}'.format(plugins_root.__name__, name)
         self.import_args = ('.{}'.format(name), plugins_root.__name__)
+
         self.plugin = None
         self.module_imported = False
+        self.reload_queue = Queue()
+
+        asyncio.ensure_future(self.watch_modified())
+
+    def on_modified(self, modified):
+        self.reload_queue.put(modified)
 
     def initialize(self):
         unsafe(self.load_plugin)
@@ -48,12 +57,6 @@ class PluginReloader(FileSystemEventHandler):
         self.plugin = self.module.plugin_cls(*self.args)
         self.plugin.load()
 
-    def on_modified(self, modified):
-        if self.module_imported:
-            unsafe(self.reload_plugin)
-        else:
-            unsafe(self.load_plugin)
-
     def reload_module(self, module):
         for attribute_name in dir(module):
             attribute = getattr(module, attribute_name)
@@ -63,6 +66,20 @@ class PluginReloader(FileSystemEventHandler):
                     self.reload_module(attribute)
 
         reload(module)
+
+    async def watch_modified(self):
+        while True:
+            while self.reload_queue.empty():
+                await asyncio.sleep(.5)
+
+            self.reload_queue.get()
+
+            if self.module_imported:
+                unsafe(self.reload_plugin)
+            else:
+                unsafe(self.load_plugin)
+
+            self.reload_queue.task_done()
 
 class PluginCollection:
 
