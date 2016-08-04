@@ -5,8 +5,10 @@ from time import time
 
 import asyncio
 
+# TODO: sort those constants out
 WORK_DIR = '/snippets'
 TIMEOUT = 10
+PID_LIMIT = 10
 
 class AsyncDockerClient(DockerClient):
 
@@ -23,12 +25,15 @@ class AsyncDockerClient(DockerClient):
         return iterator
 
     def run_async(self, directory, image, code):
+        host_config = self.create_host_config(binds = {
+            directory: dict(bind=WORK_DIR)
+        })
+        host_config['PidsLimit'] = PID_LIMIT
+
         container = self.create_container(
             image       = image,
             working_dir = WORK_DIR,
-            host_config = self.create_host_config(binds = {
-                directory: dict(bind=WORK_DIR)
-            })
+            host_config = host_config
         )
         self.start(container)
 
