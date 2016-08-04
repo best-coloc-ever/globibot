@@ -1,0 +1,33 @@
+bot:
+  token: 'Your bot token'
+  plugins:
+    # hello : {}
+    logger: {}
+    eval:   {}
+    utils:  {}
+    twitch: {}
+    twitter:
+      consumer_key: 'your consumer key'
+      consumer_secret: 'your consumer secret'
+      access_token: 'your access token'
+      access_token_secret: 'your access token secret'
+    help:
+      enabled:
+        - logger
+        - eval
+        - utils
+        - twitter
+        - twitch
+        - help
+  servers:
+    - TestBot
+    - Some server name
+  masters:
+    - A valid discord user's snowflake id
+
+web:
+  port: 80
+
+db:
+  host: db
+  user: postgres
