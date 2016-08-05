@@ -13,7 +13,8 @@ RUN pip install \
     pillow \
     pynacl \
     git+https://github.com/docker/docker-py@master \
-    watchdog
+    watchdog \
+    cleverbot
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
