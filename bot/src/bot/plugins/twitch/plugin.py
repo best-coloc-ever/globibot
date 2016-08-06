@@ -8,7 +8,11 @@ from bot.lib.helpers.hooks import master_only
 class Twitch(Plugin):
 
     def load(self):
-        pass
+        self.client_id = self.config.get(c.CLIENT_ID_KEY)
+
+        if not self.client_id:
+            self.warning('Missing client id: API calls might not work')
+
 
     @command(
         p.string('!twitch') + p.string('status')
