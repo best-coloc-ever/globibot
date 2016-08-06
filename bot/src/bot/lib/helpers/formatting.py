@@ -26,7 +26,7 @@ def code_block(str_or_list, max_lines=None, language=''):
         CONTENT_LEN_LIMIT - len(language) - 8 # 2 * newlines + 6 * `
     )
 
-def format_sql_rows(rows):
+def pad_rows(rows, separator=' '):
     paddings = []
     colmun_count = len(rows[0])
 
@@ -34,9 +34,15 @@ def format_sql_rows(rows):
         paddings.append(max(map(lambda row: len(str(row[i])), rows)))
 
     return '\n'.join([
-        ' | '.join(['{:{}}'.format(str(v), paddings[i]) for i, v in enumerate(row)])
+        separator.join([
+            '{:{}}'.format(str(v), paddings[i])
+            for i, v in enumerate(row)
+        ])
         for row in rows
     ])
+
+def format_sql_rows(rows):
+    return pad_rows(rows, separator=' | ')
 
 def mention(user_id):
     return '<@{}>'.format(user_id)
