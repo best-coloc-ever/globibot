@@ -105,6 +105,8 @@ class Twitter(Plugin):
         if user_id not in self.monitored:
             return
 
+        del self.monitored[user_id]
+
         with self.transaction() as trans:
             trans.execute(q.remove_monitored, dict(
                 user_id   = user_id,
@@ -113,7 +115,8 @@ class Twitter(Plugin):
 
         await self.send_message(
             message.channel,
-            'Stopped monitoring `{}`'.format(screen_name)
+            'Stopped monitoring `{}`'.format(screen_name),
+            delete_after=15
         )
 
     @command(twitter_prefix + p.string('monitored'), master_only)
