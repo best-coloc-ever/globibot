@@ -45,10 +45,7 @@ class Help(Plugin):
         if plugin_name not in self.enabled_plugins_names:
             return
 
-        plugin = next(
-            p for p in self.plugins
-            if p.__class__.__name__.lower() == plugin_name
-        )
+        plugin = self.get_plugin(plugin_name)
 
         raw_components =[
             '{}{}'.format(
@@ -79,9 +76,11 @@ class Help(Plugin):
     Internals
     '''
 
-    @property
-    def plugins(self):
-        return [
-            plugin for plugin in self.bot.plugin_collection.plugins
-            if plugin.__class__.__name__.lower() in self.enabled_plugins_names
-        ]
+    def get_plugin(self, name):
+        return next(
+            plugin for plugin in [
+                reloader.plugin for reloader in
+                self.bot.plugin_collection.plugin_reloaders
+                if reloader.name == name
+            ]
+        )
