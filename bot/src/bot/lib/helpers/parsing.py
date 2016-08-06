@@ -56,9 +56,9 @@ def extract_snippet(tok):
 
 # Parsers
 a         = lambda value: p.some(lambda tok: tok.value == value)
-string    = lambda s: p.some(lambda tok: tok.value.lower() == s.lower()).named(s)
-some_type = lambda t: p.some(lambda tok: tok.type == t)
-any_type  = p.some(lambda _: True)
+string    = lambda s: p.some(lambda tok: tok.value.lower() == s.lower()) .named(s)
+some_type = lambda t: p.some(lambda tok: tok.type == t)                  .named(t)
+any_type  = p.some(lambda _: True)                                       .named('Any')
 
 eof   = p.finished                              .named('')
 maybe = lambda parser: p.maybe(parser)          .named('[{}]'.format(parser.name))
