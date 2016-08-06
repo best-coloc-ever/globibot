@@ -7,8 +7,8 @@ from bot.lib.helpers.hooks import master_only
 
 class Twitch(Plugin):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def load(self):
+        pass
 
     @command(
         p.string('!twitch') + p.string('status')

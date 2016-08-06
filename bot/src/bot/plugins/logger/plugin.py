@@ -11,9 +11,7 @@ from . import queries as q
 
 class Logger(Plugin):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def load(self):
         self.ws_consumers = set()
 
         self.bot.web.add_handlers(r'.*$', [

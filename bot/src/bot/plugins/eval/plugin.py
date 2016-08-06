@@ -20,9 +20,7 @@ Environment = namedtuple(
 
 class Eval(Plugin):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def load(self):
         self.docker = AsyncDockerClient()
 
         with self.transaction() as trans:

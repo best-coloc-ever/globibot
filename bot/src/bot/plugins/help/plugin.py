@@ -11,9 +11,7 @@ import re
 
 class Help(Plugin):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def load(self):
         self.enabled_plugins_names = self.config.get(c.ENABLED_PLUGINS_KEY, [])
 
     '''
