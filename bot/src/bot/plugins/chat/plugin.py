@@ -20,7 +20,7 @@ class ChatBot(Plugin):
             return
 
         await self.bot.send_typing(message.channel)
-        response = self.chat_bot.ask(message.content)
+        response = self.chat_bot.ask(' '.join(words))
 
         if response:
             await self.send_message(
