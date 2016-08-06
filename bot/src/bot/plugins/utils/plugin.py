@@ -22,7 +22,10 @@ class Utils(Plugin):
             delete_after=15
         )
 
-    @command(p.string('!master') + p.string('add') + p.bind(p.mention, 'user'))
+    @command(
+        p.string('!master') + p.string('add') + p.bind(p.mention, 'user'),
+        master_only
+    )
     async def add_master(self, message, user):
         self.bot.masters.append(str(user))
 
@@ -68,6 +71,15 @@ class Utils(Plugin):
             f.channel(channel_id),
             delete_after=15
         )
+
+    @command(p.string('!capitalize') + p.bind(p.many(p.any_type), 'words'))
+    async def titlize(self, message, words):
+        await self.send_message(
+            message.channel,
+            ' '.join(word.title() for word in words),
+            delete_after=15
+        )
+
 
     @command(p.string('!server') + p.eof)
     async def server_id(self, message):
