@@ -4,14 +4,12 @@ from bot.lib.decorators import command
 from bot.lib.helpers import parsing as p
 from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
-from bot.lib.helpers.async_iterator import AsyncIterator
 
 from . import constants as c
 from . import queries as q
 from . import errors as e
 
 from twitter import Twitter as TwitterAPI
-from twitter import TwitterStream
 from twitter import OAuth
 
 from collections import namedtuple
