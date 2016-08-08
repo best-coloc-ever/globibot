@@ -5,7 +5,7 @@ RUN pip install \
     discord.py \
     tornado \
     parse \
-    funcparserlib \
+    git+https://github.com/vlasovskikh/funcparserlib@master \
     twitter \
     youtube-dl \
     psycopg2 \

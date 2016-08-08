@@ -7,6 +7,7 @@ from re import DOTALL
 class TokenType:
     Space = 'SPACE'
     Integer = 'INTEGER'
+    Float = 'FLOAT'
     Mention = 'MENTION'
     Channel = 'CHANNEL'
     Snippet = 'SNIPPET'
@@ -14,6 +15,7 @@ class TokenType:
 
 TOKEN_SPEC = [
     (TokenType.Space,   (r'\s+',)),
+    (TokenType.Float,   (r'[0-9]*\.[0-9]+',)),
     (TokenType.Integer, (r'[0-9]+',)),
     (TokenType.Mention, (r'<@!?[0-9]+>',)),
     (TokenType.Channel, (r'<#[0-9]+>',)),
@@ -31,6 +33,7 @@ def tokenize(string, tokenizer=default_tokenizer, ignores=(TokenType.Space,)):
 
 # Transformers
 to_i = lambda tok: int(tok.value)
+to_f = lambda tok: float(tok.value)
 to_s = lambda tok: str(tok.value)
 to_a = lambda toks: [tok.value for tok in toks]
 const = lambda value: lambda _: value
@@ -55,16 +58,46 @@ def extract_snippet(tok):
     )
 
 # Parsers
+def not_parser(parser):
+
+    @p.Parser
+    def _not_parser(tokens, s):
+        if s.pos >= len(tokens):
+            raise p.NoParseError('no tokens left in the stream', s)
+        try:
+            parser.run(tokens, s)
+        except p.NoParseError:
+            pos = s.pos + 1
+            s2 = p.State(pos, max(pos, s.max))
+            return None, s2
+        else:
+            raise p.NoParseError('parsing failed', s)
+
+    _not_parser.name = '!{}'.format(parser.name)
+
+    return _not_parser
+
 a         = lambda value: p.some(lambda tok: tok.value == value)
 string    = lambda s: p.some(lambda tok: tok.value.lower() == s.lower()) .named(s)
 some_type = lambda t: p.some(lambda tok: tok.type == t)                  .named(t)
+not_type  = lambda t: p.some(lambda tok: tok.type != t)                  .named('!{}'.format(t))
 any_type  = p.some(lambda _: True)                                       .named('Any')
 
-eof   = p.finished                              .named('')
-maybe = lambda parser: p.maybe(parser)          .named('[{}]'.format(parser.name))
-many  = lambda parser: (p.many(parser) >> to_a) .named('{}...'.format(parser.name))
+eof     = p.finished                        .named('')
+some    = p.some
+maybe   = lambda parser: p.maybe(parser)    .named('[{}]'.format(parser.name))
+many    = lambda parser: p.many(parser)     .named('{}...'.format(parser.name))
+skip    = lambda parser: p.skip(parser)     .named('')
+oneplus = lambda parser: p.oneplus(parser)  .named('[{}]'.format(parser.name))
+sparsed = lambda parser: (skip(many(not_parser(parser))) + parser)\
+                                            .named('...{}'.format(parser.name))
 
-integer = (some_type(TokenType.Integer) >> to_i)               .named('N')
+integer = (some_type(TokenType.Integer) >> to_i)               .named('I')
+number  = (
+    (   some_type(TokenType.Integer)
+    |   some_type(TokenType.Float)
+    )
+    >> to_f)                                                   .named('N')
 word    = (some_type(TokenType.Word)    >> to_s)               .named('W')
 mention = (some_type(TokenType.Mention) >> extract_mention_id) .named('M')
 channel = (some_type(TokenType.Channel) >> extract_channel_id) .named('C')
