@@ -44,15 +44,48 @@ class Globibot(DiscordClient):
 
     async def on_message(self, message):
         self.debug_message(message, 'received')
-        self._dispatch(Plugin.dispatch_new, message)
+        self._dispatch_message(Plugin.dispatch_new, message)
 
     async def on_message_delete(self, message):
         self.debug_message(message, 'deleted')
-        self._dispatch(Plugin.dispatch_deleted, message)
+        self._dispatch_message(Plugin.dispatch_deleted, message)
 
     async def on_message_edit(self, before, after):
         self.debug_message(after, 'edited')
-        self._dispatch(Plugin.dispatch_edit, before, after)
+        self._dispatch_message(Plugin.dispatch_edit, before, after)
+
+    async def on_channel_create(self, channel):
+        logger.debug(
+            'The "{}" channel has been created on the server "{}"'
+                .format(channel.name, channel.server.name)
+        )
+
+    async def on_channel_delete(self, channel):
+        logger.debug(
+            'The "{}" channel has been removed on the server "{}"'
+                .format(channel.name, channel.server.name)
+        )
+
+    async def on_channel_update(self, before, after):
+        logger.debug(
+            'The "{}" channel has been modified on the server "{}"'
+                .format(before.name, before.server.name)
+        )
+
+    async def on_member_join(self, member):
+        logger.debug(
+            '{} ({}) has joined the server "{}"'
+                .format(member.name, member.id, member.server.name)
+        )
+
+    async def on_member_remove(self, member):
+        logger.debug(
+            '{} ({}) has left the server "{}"'
+                .format(member.name, member.id, member.server.name)
+        )
+
+    async def on_member_update(self, before, after):
+        self._dispatch(Plugin.dispatch_member_update, before, after)
 
     '''
     Helpers
@@ -94,10 +127,13 @@ class Globibot(DiscordClient):
             )
         )
 
-    def _dispatch(self, plugin_action, message, *args):
+    def _dispatch_message(self, plugin_action, message, *args):
         if message.author.id == self.user.id: # ignoring our own messages
             return
 
+        self._dispatch(plugin_action, message, *args)
+
+    def _dispatch(self, plugin_action, *args):
         for plugin in self.plugin_collection.plugins:
-            future = plugin_action(plugin, message, *args)
+            future = plugin_action(plugin, *args)
             ensure_future(future)

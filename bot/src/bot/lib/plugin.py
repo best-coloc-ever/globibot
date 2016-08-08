@@ -116,6 +116,9 @@ class Plugin:
         self.match_commands(after)
         await self.on_edit(before, after)
 
+    async def dispatch_member_update(self, before, after):
+        await self.on_member_update(before, after)
+
     async def on_new(self, message):
         pass
 
@@ -123,6 +126,9 @@ class Plugin:
         pass
 
     async def on_edit(self, before, after):
+        pass
+
+    async def on_member_update(self, before, after):
         pass
 
     def match_commands(self, message):
