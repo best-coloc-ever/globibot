@@ -47,8 +47,12 @@ class Stats(Plugin):
     Commands
     '''
 
+    stats_prefix = p.string('!stats')
+
+    stats_games_prefix = stats_prefix + p.string('games')
+
     @command(
-        p.string('!stats') + p.string('games') + p.bind(p.mention, 'user_id'),
+        stats_games_prefix + p.bind(p.mention, 'user_id'),
         master_only
     )
     async def stats_games(self, message, user_id):
@@ -85,6 +89,27 @@ class Stats(Plugin):
             await self.send_message(
                 message.channel,
                 response,
+                delete_after = 25
+            )
+
+    @command(
+        stats_games_prefix + p.string('top') + p.bind(p.maybe(p.integer), 'count'),
+        master_only
+    )
+    async def stats_games_top(self, message, count=10):
+        user_ids = tuple(member.id for member in message.server.members)
+
+        with self.transaction() as trans:
+            trans.execute(q.top_games, dict(
+                limit = count,
+                authors_id = user_ids
+            ))
+            data = trans.fetchall()
+
+            await self.send_message(
+                message.channel,
+                'Most **{}** games played on this server\n{}'
+                    .format(len(data), f.code_block(f.format_sql_rows(data))),
                 delete_after = 25
             )
 

@@ -11,3 +11,12 @@ author_games = '''
     select id, author_id, name, duration, created_at from game_played_time
     where  author_id = %(author_id)s
 '''
+
+top_games = '''
+    select       name, sum(duration)
+        from     game_played_time
+        where    author_id in %(authors_id)s
+        group by name
+        order by sum(duration) desc
+        limit    %(limit)s
+'''
