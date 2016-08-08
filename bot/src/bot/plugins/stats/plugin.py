@@ -29,8 +29,7 @@ class Stats(Plugin):
                     self.game_times_by_id[member.id] = game_timer
 
     def unload(self):
-        for user_id, (game_name, start) in self.game_times_by_id.items():
-            self.add_game_time(user_id, game_name, start)
+        self.dump_all()
 
     async def on_member_update(self, before, after):
         if before.game != after.game:
@@ -101,8 +100,19 @@ class Stats(Plugin):
         duration = int(time() - start)
 
         with self.transaction() as trans:
-            trans.execute(q.add_game_time, dict(
-                author_id = user_id,
-                name = game_name,
-                duration = duration
-            ))
+            trans.execute(q.add_game_times(1), [(user_id, game_name, duration)])
+
+    def dump_all(self):
+        now = time()
+
+        data = [
+            (user_id, game_name, now - start) for
+            user_id, (game_name, start) in self.game_times_by_id.items()
+        ]
+
+        with self.transaction() as trans:
+            trans.execute(q.add_game_times(len(data)), data)
+
+        for user_id, (game_name, start) in self.game_times_by_id.items():
+            self.game_times_by_id[user_id] = (game_name, now)
+
