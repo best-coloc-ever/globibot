@@ -16,7 +16,7 @@ def unsafe(action, *args, **kwargs):
     try:
         action(*args, **kwargs)
     except:
-        logger.error(format_exc(10))
+        logger.error(format_exc())
 
 class PluginReloader(FileSystemEventHandler):
 
