@@ -10,12 +10,16 @@ from . import queries as q
 from collections import namedtuple
 from time import time
 
+import asyncio
+
 GamePlayed = namedtuple(
     'GamePlayed',
     ['id', 'author_id', 'name', 'duration', 'created_at']
 )
 
 class Stats(Plugin):
+
+    GAME_DUMP_INTERVAL = 60 * 10
 
     def load(self):
         self.game_times_by_id = dict()
@@ -28,7 +32,11 @@ class Stats(Plugin):
                     game_timer = (member.game.name.lower(), now)
                     self.game_times_by_id[member.id] = game_timer
 
+        self.alive = True
+        self.run_async(self.dump_periodically())
+
     def unload(self):
+        self.alive = False
         self.dump_all()
 
     async def on_member_update(self, before, after):
@@ -116,3 +124,11 @@ class Stats(Plugin):
         for user_id, (game_name, start) in self.game_times_by_id.items():
             self.game_times_by_id[user_id] = (game_name, now)
 
+    async def dump_periodically(self):
+        while True:
+            await asyncio.sleep(Stats.GAME_DUMP_INTERVAL)
+
+            if not self.alive:
+                break
+
+            self.dump_all()
