@@ -86,11 +86,11 @@ any_type  = p.some(lambda _: True)                                       .named(
 eof     = p.finished                        .named('')
 some    = p.some
 maybe   = lambda parser: p.maybe(parser)    .named('[{}]'.format(parser.name))
-many    = lambda parser: p.many(parser)     .named('{}...'.format(parser.name))
+many    = lambda parser: p.many(parser)     .named('[{}]...'.format(parser.name))
 skip    = lambda parser: p.skip(parser)     .named('')
-oneplus = lambda parser: p.oneplus(parser)  .named('[{}]'.format(parser.name))
+oneplus = lambda parser: p.oneplus(parser)  .named('{},[{}]...'.format(parser.name, parser.name))
 sparsed = lambda parser: (skip(many(not_parser(parser))) + parser)\
-                                            .named('...{}'.format(parser.name))
+                                            .named('_{}'.format(parser.name))
 
 integer = (some_type(TokenType.Integer) >> to_i)               .named('I')
 number  = (
