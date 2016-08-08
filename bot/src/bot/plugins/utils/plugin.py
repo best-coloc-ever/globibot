@@ -5,6 +5,8 @@ from bot.lib.helpers import parsing as p
 from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
 
+from .units import unit_value_parser, UNITS
+
 class Utils(Plugin):
 
     PREFIXES = ['!', '-', '/']
@@ -13,6 +15,23 @@ class Utils(Plugin):
         '{}{}'.format(prefix, s)
         for prefix in Utils.PREFIXES
     ]).named('[{}]{}'.format(''.join(Utils.PREFIXES), s)) >> p.to_s
+
+    @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'))
+    async def convert(self, message, unit_values):
+        converted = []
+        for uv in unit_values:
+            transform, true_unit = UNITS[uv.unit]
+            converted.append('{} {}'.format(transform(uv.value), true_unit))
+
+        await self.send_message(
+            message.channel,
+            '{} I think you meant {}'
+                .format(
+                    message.author.mention,
+                    '/'.join('`{}`'.format(conversion) for conversion in converted)
+                ),
+            delete_after = 60
+        )
 
     @command(p.string('!user') + p.bind(p.mention, 'user'))
     async def user_id(self, message, user):
@@ -71,15 +90,6 @@ class Utils(Plugin):
             f.channel(channel_id),
             delete_after=15
         )
-
-    @command(p.string('!capitalize') + p.bind(p.many(p.any_type), 'words'))
-    async def titlize(self, message, words):
-        await self.send_message(
-            message.channel,
-            ' '.join(word.title() for word in words),
-            delete_after=15
-        )
-
 
     @command(p.string('!server') + p.eof)
     async def server_id(self, message):

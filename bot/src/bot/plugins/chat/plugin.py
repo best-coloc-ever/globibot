@@ -12,7 +12,7 @@ class ChatBot(Plugin):
         self.chat_bot = Cleverbot()
 
     @command(
-        p.bind(p.mention, 'user') + p.bind(p.many(p.any_type), 'words'),
+        p.bind(p.mention, 'user') + p.bind((p.many(p.any_type >> p.to_s)), 'words'),
         master_only
     )
     async def answer(self, message, user, words):
