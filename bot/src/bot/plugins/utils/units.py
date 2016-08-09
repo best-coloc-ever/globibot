@@ -38,27 +38,52 @@ class Unit:
     def __call__(self, value):
         return Value(self, value)
 
-class Distance(Unit): pass
+class Length(Unit): pass
 
-inch = Distance('in', 'inch', 'inches', "''", '"')
-foot = Distance('ft', 'foot', 'feet',   "'")
-yard = Distance('yd', 'yard', 'yards')
-mile = Distance('mi', 'mile', 'miles')
+inch = Length('in', 'inch', 'inches', "''", '"')
+foot = Length('ft', 'foot', 'feet',   "'")
+yard = Length('yd', 'yard', 'yards')
+mile = Length('mi', 'mile', 'miles')
 
-mm   = Distance('mm', 'millimeter', 'millimeters')
-cm   = Distance('cm', 'centimeter', 'centimeters')
-m    = Distance('m',  'meter',      'meters')
-km   = Distance('km', 'kilometer',  'kilometers')
+mm   = Length('mm', 'millimeter', 'millimeters')
+cm   = Length('cm', 'centimeter', 'centimeters')
+m    = Length('m',  'meter',      'meters')
+km   = Length('km', 'kilometer',  'kilometers')
+
+class Mass(Unit): pass
+
+oz = Mass('oz', 'ounce', 'ounces')
+lb = Mass('lb', 'pound', 'pounds')
+
+mg = Mass('mg', 'milligram', 'milligrams')
+g  = Mass('g',  'gram',      'grams')
+kg = Mass('kg', 'kilogram',  'kilograms')
+
+class Volume(Unit): pass
+
+pt     = Volume('pt', 'pint', 'pints')
+gallon = Volume('gallon', 'gallons')
+
+ml     = Volume('mL', 'milliliter', 'milliliters')
+l      = Volume('L', 'liter', 'liters')
 
 class Temperature(Unit): pass
 
 fahrenheit = Temperature('°F', 'fahrenheit', 'fahrenheits', 'f')
+
 centigrad  = Temperature('°C', 'centigrad',  'centigrads',  'c')
 
+
 UNITS = [
-    # Distances
+    # Lengths
     inch, foot, yard, mile,
     mm, cm, m, km,
+    # Masses
+    oz, lb,
+    mg, g, kg,
+    # Volumes,
+    pt, gallon,
+    ml, l,
     # Temperatures
     fahrenheit,
     centigrad
@@ -102,6 +127,13 @@ SYSTEM_CONVERSIONS = [
     *two_way_ratio(yard(1), m(0.9144)),
     *two_way_ratio(mile(1), km(1.60934)),
 
+    *two_way_ratio(oz(1), mg(28349.5)),
+    *two_way_ratio(oz(1), g(28.3495)),
+    *two_way_ratio(lb(1), kg(0.453592)),
+
+    *two_way_ratio(pt(1), ml(473.176)),
+    *two_way_ratio(gallon(1), l(3.78541)),
+
     Conversion(fahrenheit, centigrad, lambda f: (f - 32) / 1.8),
     Conversion(centigrad, fahrenheit, lambda c: c * 1.8 + 32),
 ]
@@ -119,6 +151,15 @@ REDUCE_CONVERSIONS = [
     simple_ratio(inch(12), foot(1)),
     simple_ratio(foot(3), yard(1)),
     simple_ratio(yard(1760), mile(1)),
+
+    simple_ratio(oz(16), lb(1)),
+
+    simple_ratio(mg(1000), g(1)),
+    simple_ratio(g(1000), kg(1)),
+
+    simple_ratio(pt(8), gallon(1)),
+
+    simple_ratio(ml(1000), l(1)),
 ]
 
 REDUCE_CONVERSIONS_BY_UNIT = dict(
@@ -134,6 +175,15 @@ INCREASE_CONVERSIONS = [
     simple_ratio(foot(1), inch(12)),
     simple_ratio(yard(1), foot(3)),
     simple_ratio(mile(1), yard(1760)),
+
+    simple_ratio(lb(1), oz(16)),
+
+    simple_ratio(g(1), mg(1000)),
+    simple_ratio(kg(1), g(1000)),
+
+    simple_ratio(gallon(1), pt(8)),
+
+    simple_ratio(l(1), ml(1000)),
 ]
 
 INCREASE_CONVERSIONS_BY_UNIT = dict(

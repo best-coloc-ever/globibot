@@ -30,7 +30,7 @@ class Utils(Plugin):
                 summed = sum_units(*values)
                 converted_summed = system_convert(summed)
                 output.append(
-                    '{} sum: {} = {}'
+                    '{} total: {} = {}'
                         .format(t.__name__.lower(), summed, converted_summed)
                 )
 
