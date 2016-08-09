@@ -15,8 +15,8 @@ class TokenType:
 
 TOKEN_SPEC = [
     (TokenType.Space,   (r'\s+',)),
-    (TokenType.Float,   (r'[0-9]*\.[0-9]+',)),
-    (TokenType.Integer, (r'[0-9]+',)),
+    (TokenType.Float,   (r'[+-]?[0-9]*\.[0-9]+',)),
+    (TokenType.Integer, (r'[+-]?[0-9]+',)),
     (TokenType.Mention, (r'<@!?[0-9]+>',)),
     (TokenType.Channel, (r'<#[0-9]+>',)),
     (TokenType.Snippet, (r'```\S+\n(.*?)```', DOTALL)),
