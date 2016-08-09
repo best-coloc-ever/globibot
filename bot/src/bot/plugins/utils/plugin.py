@@ -5,7 +5,9 @@ from bot.lib.helpers import parsing as p
 from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
 
-from .units import unit_value_parser, UNITS
+from .units import unit_value_parser, system_convert, sum_units
+
+from itertools import groupby
 
 class Utils(Plugin):
 
@@ -18,18 +20,24 @@ class Utils(Plugin):
 
     @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'))
     async def convert(self, message, unit_values):
-        converted = []
-        for uv in unit_values:
-            transform, true_unit = UNITS[uv.unit]
-            converted.append('{} {}'.format(transform(uv.value), true_unit))
+        converted = [(uv, system_convert(uv)) for uv in unit_values]
+        output = ['{} = {}'.format(uv, conv) for uv, conv in converted]
+
+        for t, uvs in groupby(converted, key=lambda uvs: type(uvs[0].unit)):
+            values = list(map(lambda x: x[0], uvs))
+
+            if len(values) >= 2:
+                summed = sum_units(*values)
+                converted_summed = system_convert(summed)
+                output.append(
+                    '{} sum: {} = {}'
+                        .format(t.__name__.lower(), summed, converted_summed)
+                )
 
         await self.send_message(
             message.channel,
-            '{} I think you meant {}'
-                .format(
-                    message.author.mention,
-                    '/'.join('`{}`'.format(conversion) for conversion in converted)
-                ),
+            'Converted units\n{}'
+                .format(f.code_block(output)),
             delete_after = 60
         )
 
