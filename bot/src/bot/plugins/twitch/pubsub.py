@@ -70,6 +70,7 @@ class PubSub:
         self.orders = asyncio.Queue()
         self.iterators_by_topic = defaultdict(dict)
         self.ws = None
+        self.service_started = False
 
     async def shutdown(self):
         for iterators in self.iterators_by_topic.values():
@@ -102,7 +103,8 @@ class PubSub:
             await self.issue_order(order)
 
     async def issue_order(self, order):
-        if not self.ws:
+        if not self.service_started:
+            self.service_started = True
             self.run_async(self.run_ws())
 
         await self.orders.put(order)
@@ -126,6 +128,7 @@ class PubSub:
                 await self.on_ws_data(data)
 
         self.ws = None
+        self.service_started = False
         self.debug('Disconnected from PubSub service')
 
     async def on_ws_data(self, data):
