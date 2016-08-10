@@ -72,7 +72,7 @@ class Temperature(Unit): pass
 fahrenheit = Temperature('°F', 'fahrenheit', 'fahrenheits', 'f')
 
 centigrad  = Temperature('°C', 'centigrad',  'centigrads',  'c')
-kelvin     = Temperature('K',  'kelvin', 'kelvins')
+kelvin     = Temperature('°K',  'kelvin', 'kelvins', 'k')
 
 
 UNITS = [

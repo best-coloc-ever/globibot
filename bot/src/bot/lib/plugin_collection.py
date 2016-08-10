@@ -44,18 +44,18 @@ class PluginReloader(FileSystemEventHandler):
         self.module = import_module(*self.import_args)
         self.module_imported = True
         self.plugin = self.module.plugin_cls(*self.args)
-        self.plugin.load()
+        self.plugin.do_load()
 
     def reload_plugin(self):
         logger.info('Unloading plugin: {}'.format(self.name))
-        self.plugin.unload()
+        self.plugin.do_unload()
 
         logger.info('Reloading module: {}...'.format(self.module))
         self.reload_module(self.module)
 
         logger.info('Loading plugin: {}'.format(self.name))
         self.plugin = self.module.plugin_cls(*self.args)
-        self.plugin.load()
+        self.plugin.do_load()
 
     def reload_module(self, module):
         for attribute_name in dir(module):

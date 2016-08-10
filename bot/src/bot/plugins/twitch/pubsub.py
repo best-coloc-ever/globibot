@@ -63,8 +63,9 @@ class PubSub:
     class Topics:
         VIDEO_PLAYBACK = lambda name: 'video-playback.{}'.format(name)
 
-    def __init__(self, debug):
+    def __init__(self, debug, run_async):
         self.debug = debug
+        self.run_async = run_async
 
         self.orders = asyncio.Queue()
         self.iterators_by_topic = defaultdict(dict)
@@ -102,7 +103,7 @@ class PubSub:
 
     async def issue_order(self, order):
         if not self.ws:
-            asyncio.ensure_future(self.run_ws())
+            self.run_async(self.run_ws())
 
         await self.orders.put(order)
 
@@ -112,8 +113,8 @@ class PubSub:
         async with websockets.connect(PubSub.WS_URL) as ws:
             self.ws = ws
 
-            asyncio.ensure_future(self.send_pings())
-            asyncio.ensure_future(self.process_pubsub_orders())
+            self.run_async(self.send_pings())
+            self.run_async(self.process_pubsub_orders())
 
             while True:
                 try:

@@ -28,7 +28,7 @@ class Twitch(Plugin):
             self.warning('Missing client id: API calls might not work')
 
         self.api = TwitchAPI(self.client_id, self.debug)
-        self.pubsub = PubSub(self.debug)
+        self.pubsub = PubSub(self.debug, self.run_async)
 
         self.restore_monitored()
 

@@ -28,6 +28,17 @@ class Plugin:
         self.error    = partial(self.log, logging.ERROR)
         self.critical = partial(self.log, logging.CRITICAL)
 
+        self.asyncs = set()
+
+    def do_load(self):
+        self.load()
+
+    def do_unload(self):
+        tasks = asyncio.gather(*self.asyncs, return_exceptions=True)
+        tasks.cancel()
+
+        self.unload()
+
     def load(self): pass
     def unload(self): pass
 
@@ -95,7 +106,9 @@ class Plugin:
                 await future
             except Exception:
                 self.error(format_exc(10))
+            self.asyncs.remove(future)
 
+        self.asyncs.add(future)
         asyncio.ensure_future(run())
 
     '''
