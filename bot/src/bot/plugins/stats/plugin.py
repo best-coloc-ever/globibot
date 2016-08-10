@@ -28,7 +28,7 @@ class Stats(Plugin):
 
         for server in self.bot.servers:
             for member in server.members:
-                if member.game:
+                if member.game and member.game.name:
                     game_timer = (member.game.name.lower(), now)
                     self.game_times_by_id[member.id] = game_timer
 
@@ -124,7 +124,7 @@ class Stats(Plugin):
         except KeyError:
             pass
 
-        if new_game:
+        if new_game and new_game.name:
             self.game_times_by_id[user_id] = (new_game.name.lower(), time())
         else:
             self.game_times_by_id.pop(user_id, None)
