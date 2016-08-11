@@ -96,11 +96,16 @@ class PluginCollection:
                 recursive=True
             )
 
-    def load_plugins(self):
-        for reloader in self.plugin_reloaders:
-            reloader.initialize()
+        self.loaded = False
 
-        self.path_observer.start()
+    def load_plugins(self):
+        if not self.loaded:
+            self.loaded = True
+
+            for reloader in self.plugin_reloaders:
+                reloader.initialize()
+
+            self.path_observer.start()
 
     @property
     def plugins(self):
