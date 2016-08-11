@@ -35,3 +35,11 @@ last_edited_logs = '''
         order by    stamp desc
         limit       (%(limit)s)
 '''
+
+find_logs = '''
+    select content  from log
+        where       content ilike %(str)s
+            and     author_id = %(author_id)s
+        order by    stamp desc
+        limit       %(limit)s
+'''

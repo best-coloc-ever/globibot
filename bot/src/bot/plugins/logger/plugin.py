@@ -61,9 +61,9 @@ class Logger(Plugin):
 
             await self.send_message(
                 message.channel,
-                'last `{}` deleted messages from <@{}>:\n{}'
+                'last **{}** deleted messages from <@{}>:\n{}'
                     .format(len(results), user_id, f.code_block(messages)),
-                delete_after=10
+                delete_after = 30
             )
 
     @command(
@@ -90,9 +90,33 @@ class Logger(Plugin):
 
             await self.send_message(
                 message.channel,
-                'last {} edited messages from <@{}>:\n{}'
+                'last **{}** edited messages from <@{}>:\n{}'
                     .format(len(messages), user_id, '\n'.join(messages)),
-                delete_after=10
+                delete_after = 30
+            )
+
+    @command(
+        p.string('!logs') + p.string('find')
+                          + p.bind(p.mention, 'user_id')
+                          + p.bind(p.word, 'what')
+                          + p.bind(p.maybe(p.integer), 'count'),
+        master_only
+    )
+    async def logs_find(self, message, user_id, what, count=10):
+        with self.transaction() as trans:
+            trans.execute(q.find_logs, dict(
+                author_id = user_id,
+                str       = '%%{}%%'.format(what),
+                limit     = count
+            ))
+            results = trans.fetchall()
+            messages = [r[0] for r in results]
+
+            await self.send_message(
+                message.channel,
+                'Found **{}** messages\n{}'
+                    .format(len(results), f.code_block(messages)),
+                delete_after = 30
             )
 
     '''
