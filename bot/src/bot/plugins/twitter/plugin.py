@@ -22,7 +22,7 @@ MonitoredChannel = namedtuple(
 )
 
 def format_tweet(tweet):
-    return (
+    text = (
         'Last tweet from `@{screen_name}`:\n\n'
         '{text}\n'
         '**{retweets}** 🔄   **{favourites}** 👍'
@@ -32,6 +32,18 @@ def format_tweet(tweet):
         retweets    = tweet['retweet_count'],
         favourites  = tweet['favorite_count']
     )
+
+    try:
+        entities = tweet['extended_entities']['media']
+        media_urls = [entity['media_url_https'] for entity in entities]
+        text += (
+            '\n\nMedia files attached in the tweet:\n{}'
+                .format('\n'.join(media_urls))
+        )
+    except:
+        pass
+
+    return text
 
 class Twitter(Plugin):
 
@@ -66,6 +78,7 @@ class Twitter(Plugin):
         tweets = self.get_tweets(user['id'], count=1)
 
         if tweets:
+            self.debug(tweets[0])
             await self.send_message(
                 message.channel,
                 format_tweet(tweets[0]),
