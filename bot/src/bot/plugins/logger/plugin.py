@@ -23,8 +23,9 @@ class Logger(Plugin):
     '''
 
     async def on_new(self, message):
-        self.save_log(message, message.timestamp)
-        self.notify_ws(message, 'original')
+        if message.server:
+            self.save_log(message, message.timestamp)
+            self.notify_ws(message, 'original')
 
     async def on_delete(self, message):
         with self.transaction() as trans:

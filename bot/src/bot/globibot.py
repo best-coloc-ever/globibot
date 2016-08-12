@@ -135,7 +135,7 @@ class Globibot(DiscordClient):
             return
 
         # Filtering servers
-        if message.server.name not in self.enabled_servers:
+        if message.server and message.server.name not in self.enabled_servers:
             return
 
         self._dispatch(plugin_action, message, *args)
