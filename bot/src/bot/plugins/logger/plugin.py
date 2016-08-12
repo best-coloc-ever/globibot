@@ -119,6 +119,25 @@ class Logger(Plugin):
                 delete_after = 30
             )
 
+    @command(p.string('!logs') + p.string('top') + p.bind(p.maybe(p.integer), 'count'))
+    async def most_active(self, message, count = 10):
+        with self.transaction() as trans:
+            trans.execute(q.most_logs, dict(
+                server_id = message.server.id,
+                limit     = count
+            ))
+            results = [
+                '{}: {:,} messages'.format(f.mention(r[0]), r[1])
+                for r in trans.fetchall()
+            ]
+
+            await self.send_message(
+                message.channel,
+                'most **{}** active users on this server\n{}'
+                    .format(len(results), '\n'.join(results)),
+                    delete_after = 30
+            )
+
     '''
     Details
     '''

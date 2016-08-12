@@ -43,3 +43,11 @@ find_logs = '''
         order by    stamp desc
         limit       %(limit)s
 '''
+
+most_logs = '''
+    select author_id, count(*) from log
+        where       server_id = %(server_id)s
+        group by    author_id
+        order by    count(*) desc
+        limit       %(limit)s
+'''
