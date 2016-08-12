@@ -30,6 +30,8 @@ class Globibot(DiscordClient):
             self.config.get(c.MASTER_IDS_KEY, [])
         ]
 
+        self.enabled_servers = self.config.get(c.ENABLED_SERVERS_KEY, [])
+
     '''
     Events
     '''
@@ -128,7 +130,12 @@ class Globibot(DiscordClient):
         )
 
     def _dispatch_message(self, plugin_action, message, *args):
-        if message.author.id == self.user.id: # ignoring our own messages
+        # Ignoring our own messages
+        if message.author.id == self.user.id:
+            return
+
+        # Filtering servers
+        if message.server.name not in self.enabled_servers:
             return
 
         self._dispatch(plugin_action, message, *args)
