@@ -119,7 +119,10 @@ class Logger(Plugin):
                 delete_after = 30
             )
 
-    @command(p.string('!logs') + p.string('top') + p.bind(p.maybe(p.integer), 'count'))
+    @command(
+        p.string('!logs') + p.string('top') + p.bind(p.maybe(p.integer), 'count'),
+        master_only
+    )
     async def most_active(self, message, count = 10):
         with self.transaction() as trans:
             trans.execute(q.most_logs, dict(
@@ -143,7 +146,7 @@ class Logger(Plugin):
     '''
 
     def save_log(self, message, stamp):
-        attachments = [attachment['url'] for attachment in message.attachments]
+        attachments = [attachment['proxy_url'] for attachment in message.attachments]
 
         with self.transaction() as trans:
             trans.execute(q.create_log, dict(
