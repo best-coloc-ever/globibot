@@ -4,11 +4,13 @@
 
   <table if={ data }>
     <tr>
+      <th>#</th>
       <th>Game name</th>
       <th>Playtime (hours) </th>
     </tr>
 
     <tr each={ item, i in data }>
+      <td>{ i + 1 }</td>
       <td>{ item[0] }</td>
       <td>{ (item[1] / 3600).toFixed(2) }</td>
     </tr>
