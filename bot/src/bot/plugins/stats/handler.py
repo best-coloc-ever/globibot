@@ -11,10 +11,16 @@ class StatsStaticHandler(RequestHandler):
         with open('src/bot/plugins/stats/html/{}'.format(test)) as f:
             self.write(f.read())
 
+class StatsUserHandler(RequestHandler):
+
+    async def get(self):
+        with open('src/bot/plugins/stats/html/user_top/index.html') as f:
+            self.write(f.read())
+
 class StatsGameHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/stats/html/index.html') as f:
+        with open('src/bot/plugins/stats/html/game_top/index.html') as f:
             self.write(f.read())
 
 class Cache:
@@ -26,11 +32,11 @@ class Cache:
 
     def get_data(self, server, plugin):
         now = time()
-        if now - self.last_update > 180:
+        if now - self.last_update > 300:
             self.last_update = now
             data = plugin.top_games(server, 1000)
             data = [
-                d[:3] + (self.member(server, str(d[3])).name,)
+                d[:3] + ((str(d[3]), self.member(server, str(d[3])).name),)
                 for d in data
             ]
             self.cache[server.id] = data
@@ -61,3 +67,17 @@ class StatsGamesTopHandler(RequestHandler):
             top_games = [TopGame(*row) for row in data]
             self.set_header("Content-Type", 'application/json')
             self.write(json_encode(top_games))
+
+
+class StatsGamesUserHandler(RequestHandler):
+
+    def initialize(self, plugin):
+        self.plugin = plugin
+
+    async def get(self, user_id):
+        data = self.plugin.top_user_games(user_id)
+        self.plugin.debug(data)
+        if data:
+            what = [(game.name, game.duration) for game in data]
+            self.set_header("Content-Type", 'application/json')
+            self.write(json_encode(what))

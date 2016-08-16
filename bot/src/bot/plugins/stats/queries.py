@@ -10,6 +10,7 @@ add_game_times = lambda count: '''
 author_games = '''
     select id, author_id, name, duration, created_at from game_played_time
     where  author_id = %(author_id)s
+    order by duration desc
 '''
 
 top_games = '''

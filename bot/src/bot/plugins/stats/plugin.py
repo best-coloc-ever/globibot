@@ -7,7 +7,7 @@ from bot.lib.helpers.hooks import master_only
 
 # from . import handler
 
-from .handler import StatsStaticHandler, StatsGameHandler, StatsGamesTopHandler
+from .handler import StatsStaticHandler, StatsGameHandler, StatsUserHandler, StatsGamesTopHandler, StatsGamesUserHandler
 from . import queries as q
 
 from collections import namedtuple
@@ -27,7 +27,9 @@ class Stats(Plugin):
     def load(self):
         self.add_web_handlers(
             (r'/stats/game', StatsGameHandler),
+            (r'/stats/user', StatsUserHandler),
             (r'/stats/api/games/top/(?P<server_id>\w+)', StatsGamesTopHandler, dict(plugin=self)),
+            (r'/stats/api/games/user/(?P<user_id>\w+)', StatsGamesUserHandler, dict(plugin=self)),
             (r'/stats/(.*)', StatsStaticHandler),
         )
 
@@ -72,34 +74,29 @@ class Stats(Plugin):
         # Flush current tracking
         self.update_game(member.id, member.game)
 
-        with self.transaction() as trans:
-            trans.execute(q.author_games, dict(
-                author_id = user_id
-            ))
+        games = self.top_user_games(user_id)
+        top = [(game.name, game.duration) for game in games[:10]]
 
-            games = [GamePlayed(*row) for row in trans.fetchall()]
-            top = [(game.name, game.duration) for game in games[:10]]
+        if games:
+            since = min(map(lambda g: g.created_at, games))
+            since_days = int((time() - since.timestamp()) / (3600 * 24))
 
-            if games:
-                since = min(map(lambda g: g.created_at, games))
-                since_days = int((time() - since.timestamp()) / (3600 * 24))
-
-                response = (
-                    '{} has played **{}** different games in the last **{}** days '
-                    'for a total of **{}** seconds\ntop 10:\n{}'
-                ).format(
-                    f.mention(user_id), len(games), since_days,
-                    sum(map(lambda g: g.duration, games)),
-                    f.code_block(f.format_sql_rows(top))
-                )
-            else:
-                response = '{} has not played any games yet'.format(f.mention(user_id))
-
-            await self.send_message(
-                message.channel,
-                response,
-                delete_after = 25
+            response = (
+                '{} has played **{}** different games in the last **{}** days '
+                'for a total of **{}** seconds\ntop 10:\n{}'
+            ).format(
+                f.mention(user_id), len(games), since_days,
+                sum(map(lambda g: g.duration, games)),
+                f.code_block(f.format_sql_rows(top))
             )
+        else:
+            response = '{} has not played any games yet'.format(f.mention(user_id))
+
+        await self.send_message(
+            message.channel,
+            response,
+            delete_after = 25
+        )
 
     @command(
         stats_games_prefix + p.string('top') + p.bind(p.maybe(p.integer), 'count'),
@@ -141,6 +138,14 @@ class Stats(Plugin):
             ))
 
             return trans.fetchall()
+
+    def top_user_games(self, user_id):
+        with self.transaction() as trans:
+            trans.execute(q.author_games, dict(
+                author_id = user_id
+            ))
+
+            return [GamePlayed(*row) for row in trans.fetchall()]
 
     def update_game(self, user_id, new_game):
         try:

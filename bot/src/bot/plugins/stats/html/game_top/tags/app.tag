@@ -16,7 +16,7 @@
       <td>{ item[0] }</td>
       <td>{ (item[1] / 3600).toFixed(2) }</td>
       <td>{ item[2] }</td>
-      <td>{ item[3] }</td>
+      <td><a href={ '/stats/user?id=' + item[3][0] }>{ item[3][1] }</a></td>
     </tr>
   </table>
 
