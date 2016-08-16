@@ -3,6 +3,8 @@ from tornado.escape import json_encode
 
 from collections import namedtuple, defaultdict
 
+from time import time
+
 class StatsStaticHandler(RequestHandler):
 
     async def get(self, test):
@@ -15,12 +17,25 @@ class StatsGameHandler(RequestHandler):
         with open('src/bot/plugins/stats/html/index.html') as f:
             self.write(f.read())
 
-TopGame = namedtuple('TopGame', ['name', 'playtime', 'count', 'most'])
-class StatsGamesTopHandler(RequestHandler):
+class Cache:
 
-    def initialize(self, plugin):
-        self.plugin = plugin
+    def __init__(self):
         self.member_caches = defaultdict(dict)
+        self.cache = dict()
+        self.last_update = 0
+
+    def get_data(self, server, plugin):
+        now = time()
+        if now - self.last_update > 180:
+            self.last_update = now
+            data = plugin.top_games(server, 1000)
+            data = [
+                d[:3] + (self.member(server, str(d[3])).name,)
+                for d in data
+            ]
+            self.cache[server.id] = data
+
+        return self.cache.get(server.id)
 
     def member(self, server, user_id):
         try:
@@ -31,13 +46,17 @@ class StatsGamesTopHandler(RequestHandler):
                 self.member_caches[server.id][user_id] = member
                 return member
 
+cache = Cache()
+
+TopGame = namedtuple('TopGame', ['name', 'playtime', 'count', 'most'])
+class StatsGamesTopHandler(RequestHandler):
+
+    def initialize(self, plugin):
+        self.plugin = plugin
+
     async def get(self, server_id):
         server = next(server for server in self.plugin.bot.servers if server.id == server_id)
-        data = self.plugin.top_games(server, 1000)
-        data = [
-            d[:3] + (self.member(server, str(d[3])).name,)
-            for d in data
-        ]
+        data = cache.get_data(server, self.plugin)
         if data:
             top_games = [TopGame(*row) for row in data]
             self.set_header("Content-Type", 'application/json')
