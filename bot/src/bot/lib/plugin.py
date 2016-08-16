@@ -9,6 +9,8 @@ from inspect import getmembers, isfunction
 from functools import partial
 from traceback import format_exc
 
+from tornado.web import URLSpec
+
 import asyncio
 import logging
 
@@ -30,12 +32,20 @@ class Plugin:
 
         self.asyncs = set()
 
+        self.web_handlers = []
+
     def do_load(self):
         self.load()
 
     def do_unload(self):
         tasks = asyncio.gather(*self.asyncs, return_exceptions=True)
         tasks.cancel()
+
+        filtered_handlers = [
+            handler for handler in self.bot.web.handlers if
+            handler[1][0].regex not in [h.regex for h in self.web_handlers]
+        ]
+        self.bot.web.handlers = filtered_handlers
 
         self.unload()
 
@@ -110,6 +120,10 @@ class Plugin:
 
         self.asyncs.add(future)
         asyncio.ensure_future(run())
+
+    def add_web_handlers(self, *handlers):
+        self.web_handlers += [URLSpec(*handler) for handler in handlers]
+        self.bot.web.add_handlers(r'.*$', handlers)
 
     '''
     Dispatchers

@@ -5,6 +5,9 @@ from bot.lib.helpers import parsing as p
 from bot.lib.helpers import formatting as f
 from bot.lib.helpers.hooks import master_only
 
+# from . import handler
+
+from .handler import StatsStaticHandler, StatsGameHandler, StatsGamesTopHandler
 from . import queries as q
 
 from collections import namedtuple
@@ -22,6 +25,12 @@ class Stats(Plugin):
     GAME_DUMP_INTERVAL = 60 * 10
 
     def load(self):
+        self.add_web_handlers(
+            (r'/stats/game', StatsGameHandler),
+            (r'/stats/api/games/top/(?P<server_id>\w+)', StatsGamesTopHandler, dict(plugin=self)),
+            (r'/stats/(.*)', StatsStaticHandler),
+        )
+
         self.game_times_by_id = dict()
 
         now = time()
@@ -97,15 +106,9 @@ class Stats(Plugin):
         master_only
     )
     async def stats_games_top(self, message, count=10):
-        user_ids = tuple(member.id for member in message.server.members)
+        data = self.top_games(message.server, count)
 
-        with self.transaction() as trans:
-            trans.execute(q.top_games, dict(
-                limit = count,
-                authors_id = user_ids
-            ))
-            data = trans.fetchall()
-
+        if data:
             await self.send_message(
                 message.channel,
                 'Most **{}** games played on this server\n{}'
@@ -116,6 +119,17 @@ class Stats(Plugin):
     '''
     Details
     '''
+
+    def top_games(self, server, count):
+        user_ids = tuple(member.id for member in server.members)
+
+        with self.transaction() as trans:
+            trans.execute(q.top_games, dict(
+                limit = count,
+                authors_id = user_ids
+            ))
+
+            return trans.fetchall()
 
     def update_game(self, user_id, new_game):
         try:
