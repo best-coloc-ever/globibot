@@ -58,14 +58,14 @@
       self.data = [];
       var wordMap = {};
       for (var d of self.raw_data) {
-        words = d.split(',');
+        words = d.split(' ');
         for (var word of words) {
           if (!word)
             continue;
           if (word in wordMap)
             wordMap[word] += 1;
           else
-            wordMap[word] = 0;
+            wordMap[word] = 1;
         }
       }
 
