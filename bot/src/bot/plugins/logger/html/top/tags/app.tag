@@ -16,7 +16,7 @@
 
     <tr each={ item, i in data }>
       <td>{ i + 1 }</td>
-      <td>{ item[0] }</td>
+      <td><a href={ '/logs/user?id=' + item[0][0] }>{ item[0][1] }</a></td>
       <td>{ item[1] }</td>
     </tr>
   </table>

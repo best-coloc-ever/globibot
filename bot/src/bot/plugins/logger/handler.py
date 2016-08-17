@@ -1,9 +1,7 @@
 from tornado.web import RequestHandler
 from tornado.escape import json_encode
 
-from collections import namedtuple, defaultdict
-
-from time import time
+from collections import defaultdict
 
 from . import queries as q
 
@@ -13,10 +11,16 @@ class LogsStaticHandler(RequestHandler):
         with open('src/bot/plugins/logger/html/{}'.format(test)) as f:
             self.write(f.read())
 
-class LogsHandler(RequestHandler):
+class LogsTopHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/logger/html/index.html') as f:
+        with open('src/bot/plugins/logger/html/top/index.html') as f:
+            self.write(f.read())
+
+class LogsUserHandler(RequestHandler):
+
+    async def get(self):
+        with open('src/bot/plugins/logger/html/user/index.html') as f:
             self.write(f.read())
 
 class Cache:
@@ -51,9 +55,28 @@ class LogsApiTopHandler(RequestHandler):
 
             results = []
             for r in trans.fetchall():
-                member = cache.member(server, str(r[0]))
+                user_id = str(r[0])
+                member = cache.member(server, user_id)
                 if member:
-                    results.append((member.name, r[1]))
+                    results.append(((user_id, member.name), r[1]))
 
             self.set_header("Content-Type", 'application/json')
             self.write(json_encode(results))
+
+class LogsApiUserHandler(RequestHandler):
+
+    def initialize(self, plugin):
+        self.plugin = plugin
+
+    def get(self, user_id):
+        with self.plugin.transaction() as trans:
+            content = '''
+                select content from log
+                    where   author_id = %(author_id)s
+            '''
+            trans.execute(content, dict(
+                author_id = user_id,
+            ))
+
+            self.set_header("Content-Type", 'application/json')
+            self.write(json_encode([r[0] for r in trans.fetchall()]))

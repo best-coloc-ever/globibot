@@ -9,7 +9,7 @@ from itertools import groupby
 from .ws_handler import LoggerWebSocketHandler
 from . import queries as q
 
-from .handler import LogsHandler, LogsApiTopHandler, LogsStaticHandler
+from .handler import LogsTopHandler, LogsUserHandler, LogsApiTopHandler, LogsStaticHandler, LogsApiUserHandler
 
 class Logger(Plugin):
 
@@ -18,8 +18,10 @@ class Logger(Plugin):
 
         self.add_web_handlers(
             (r'/ws/logs', LoggerWebSocketHandler, dict(module=self)),
-            (r'/logs/top', LogsHandler),
+            (r'/logs/top', LogsTopHandler),
+            (r'/logs/user', LogsUserHandler),
             (r'/logs/api/top/(?P<server_id>\w+)', LogsApiTopHandler, dict(plugin=self)),
+            (r'/logs/api/user/(?P<user_id>\w+)', LogsApiUserHandler, dict(plugin=self)),
             (r'/logs/(.*)', LogsStaticHandler),
         )
 
@@ -169,6 +171,7 @@ class Logger(Plugin):
         data = dict(
             server_id   = message.server.id,
             channel_id  = message.channel.id,
+            author_id   = message.author.id,
             author      = message.author.name,
             content     = message.content,
             type        = t
