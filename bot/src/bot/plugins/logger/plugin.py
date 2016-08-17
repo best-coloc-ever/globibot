@@ -9,14 +9,19 @@ from itertools import groupby
 from .ws_handler import LoggerWebSocketHandler
 from . import queries as q
 
+from .handler import LogsHandler, LogsApiTopHandler, LogsStaticHandler
+
 class Logger(Plugin):
 
     def load(self):
         self.ws_consumers = set()
 
-        self.bot.web.add_handlers(r'.*$', [
+        self.add_web_handlers(
             (r'/ws/logs', LoggerWebSocketHandler, dict(module=self)),
-        ])
+            (r'/logs/top', LogsHandler),
+            (r'/logs/api/top/(?P<server_id>\w+)', LogsApiTopHandler, dict(plugin=self)),
+            (r'/logs/(.*)', LogsStaticHandler),
+        )
 
     '''
     Raw events
