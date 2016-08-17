@@ -68,6 +68,10 @@
           if (d[0] == data.author)
             d[1] += 1;
 
+        self.data.sort(function(a, b) {
+          return b[1] - a[1];
+        })
+
         self.update();
       }
     };
