@@ -162,10 +162,17 @@ class Logger(Plugin):
 
     def notify_ws(self, message, t):
         data = dict(
+            message_id  = message.id,
             server_id   = message.server.id,
             channel_id  = message.channel.id,
+            channel     = message.channel.name,
             author      = message.author.name,
             content     = message.content,
+            mentions    = dict(
+                    users       = message.mentions,
+                    channels    = message.channel_mentions,
+                    roles       = message.role_mentions
+                )
             type        = t
         )
         for consumer in self.ws_consumers:
