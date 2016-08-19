@@ -165,6 +165,7 @@ class Logger(Plugin):
             message_id  = message.id,
             server_id   = message.server.id,
             channel_id  = message.channel.id,
+            author_id   = message.author.id,
             channel     = message.channel.name,
             author      = message.author.name,
             content     = message.content,
