@@ -168,32 +168,38 @@ class Logger(Plugin):
             ))
 
     def notify_ws(self, message, t):
-        data = dict(
-            message_id  = message.id,
-            server_id   = message.server.id,
-            channel     = dict(
-                    id          = message.channel.id,
-                    name        = message.channel.name
-                ),
-            author      = dict(
-                    id          = message.author.id,
-                    name        = message.author.name,
-                    nick        = message.author.nick,
-                    joindate    = message.author.joined_at.timestamp(),
-                    color       = message.author.color.to_tuple()
-                ),
-            mentions    = dict(
-                    users       = message.mentions,
-                    channels    = message.channel_mentions,
-                    roles       = message.role_mentions
-                ),
-            message       = dict(
-                    tts         = message.tts,
-                    pinned      = message.pinned,
-                    content     = message.content,
-                    clean_content   = message.clean_content
-                ),
-            type        = t
+        message = dict(
+            tts           = message.tts,
+            pinned        = message.pinned,
+            content       = message.content,
+            clean_content = message.clean_content
         )
+        author = dict(
+            id       = message.author.id,
+            name     = message.author.name,
+            nick     = message.author.nick,
+            joindate = message.author.joined_at.timestamp(),
+            color    = message.author.color.to_tuple()
+        )
+        channel = dict(
+            id   = message.channel.id,
+            name = message.channel.name
+        )
+        mentions = dict(
+            users    = message.mentions,
+            channels = message.channel_mentions,
+            roles    = message.role_mentions
+        )
+
+        data = dict(
+            type       = t,
+            message_id = message.id,
+            server_id  = message.server.id,
+            channel    = channel,
+            author     = author,
+            mentions   = mentions,
+            message    = message
+        )
+
         for consumer in self.ws_consumers:
             consumer.write_message(data)
