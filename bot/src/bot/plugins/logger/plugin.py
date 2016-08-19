@@ -172,7 +172,7 @@ class Logger(Plugin):
                     users       = message.mentions,
                     channels    = message.channel_mentions,
                     roles       = message.role_mentions
-                )
+                ),
             type        = t
         )
         for consumer in self.ws_consumers:
