@@ -2,7 +2,7 @@
 
   <h4>Latest messages on server # { serverId }</h4>
   <ul>
-    <li each={ data in latestMessages }> In { data.channel.name } - { data.author.name }: { data.message.content }</li>
+    <li each={ data in latestMessages }> In { data.channel.name } - { data.author.name }: { data.message.clean_content }</li>
   </ul>
 
   <h4>Top Message count per user on server # { serverId }</h4>
