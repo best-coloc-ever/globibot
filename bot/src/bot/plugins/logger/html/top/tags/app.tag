@@ -65,7 +65,7 @@
           self.latestMessages.splice(0, self.latestMessages.length - 10);
 
         for (var d of self.data)
-          if (d[0] == data.author.id)
+          if (d[0][0] == data.author.id)
             d[1] += 1;
 
         self.data.sort(function(a, b) {
