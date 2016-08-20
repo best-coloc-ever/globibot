@@ -59,13 +59,13 @@
     ws.onmessage = function(d) {
       var data = JSON.parse(d.data);
 
-      if (data.server_id == self.serverId) {
+      if (data.server.id == self.serverId) {
         self.latestMessages.push(data);
         if (self.latestMessages.length > 10)
           self.latestMessages.splice(0, self.latestMessages.length - 10);
 
         for (var d of self.data)
-          if (d[0] == data.author)
+          if (d[0] == data.author.id)
             d[1] += 1;
 
         self.data.sort(function(a, b) {

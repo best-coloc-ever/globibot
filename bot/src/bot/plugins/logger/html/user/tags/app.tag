@@ -47,8 +47,8 @@
     ws.onmessage = function(d) {
       var data = JSON.parse(d.data);
 
-      if (data.author_id == self.userID) {
-        self.raw_data.push(data.content);
+      if (data.author.id == self.userID) {
+        self.raw_data.push(data.message.content);
         self.rebuild();
       }
     };
