@@ -168,8 +168,10 @@ class Logger(Plugin):
             ))
 
     def notify_ws(self, message, t):
-        message = dict(
+        message_ = dict(
+            id            = message.id,
             tts           = message.tts,
+            type          = t,
             pinned        = message.pinned,
             content       = message.content,
             clean_content = message.clean_content
@@ -185,6 +187,10 @@ class Logger(Plugin):
             id   = message.channel.id,
             name = message.channel.name
         )
+        server = dict(
+            id = message.server.id,
+            name = message.server.name
+        )
         mentions = dict(
             users    = message.mentions,
             channels = message.channel_mentions,
@@ -192,13 +198,11 @@ class Logger(Plugin):
         )
 
         data = dict(
-            type       = t,
-            message_id = message.id,
-            server_id  = message.server.id,
-            channel    = channel,
-            author     = author,
-            mentions   = mentions,
-            message    = message
+            server   = server,
+            channel  = channel,
+            author   = author,
+            mentions = mentions,
+            message  = message_
         )
 
         for consumer in self.ws_consumers:
