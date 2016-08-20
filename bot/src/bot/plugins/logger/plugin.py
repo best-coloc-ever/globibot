@@ -191,17 +191,18 @@ class Logger(Plugin):
             id = message.server.id,
             name = message.server.name
         )
-        mentions = dict(
-            users    = message.mentions,
-            channels = message.channel_mentions,
-            roles    = message.role_mentions
-        )
+        # TODO: Serialize mentions
+        # mentions = dict(
+        #     users    = message.mentions,
+        #     channels = message.channel_mentions,
+        #     roles    = message.role_mentions
+        # )
 
         data = dict(
             server   = server,
             channel  = channel,
             author   = author,
-            mentions = mentions,
+            # mentions = mentions,
             message  = message_
         )
 
