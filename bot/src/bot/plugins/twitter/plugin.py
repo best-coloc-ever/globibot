@@ -217,7 +217,7 @@ class Twitter(Plugin):
         self.debug('No longer monitoring {}'.format(user_id))
 
     async def update_tweet(self, tweet, message):
-        for i in range(6):
+        for i in range(24):
             await asyncio.sleep(5)
             try:
                 tweet = self.client.statuses.show(id=tweet['id'])
