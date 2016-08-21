@@ -81,12 +81,13 @@ class Twitter(Plugin):
         tweets = self.get_tweets(user['id'], count=1)
 
         if tweets:
-            self.debug(tweets[0])
-            await self.send_message(
+            tweet = tweets[0]
+            m = await self.send_message(
                 message.channel,
-                format_tweet(tweets[0]),
+                format_tweet(tweet),
                 delete_after=60
             )
+            self.run_async(self.update_tweet(tweet, m))
 
     @command(
         twitter_prefix + p.string('monitor') + p.bind(p.word, 'screen_name'),
@@ -211,5 +212,16 @@ class Twitter(Plugin):
                             server.default_channel,
                             format_tweet(latest)
                         )
+                        self.run_async(self.update_tweet(latest, m))
 
         self.debug('No longer monitoring {}'.format(user_id))
+
+    async def update_tweet(self, tweet, message):
+        for i in range(6):
+            await asyncio.sleep(5)
+            try:
+                tweet = self.client.statuses.show(id=tweet['id'])
+                await self.edit_message(message, format_tweet(tweet))
+            except Exception as e:
+                self.error(e)
+                pass
