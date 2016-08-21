@@ -13,6 +13,7 @@ from twitter import Twitter as TwitterAPI
 from twitter import OAuth
 
 from collections import namedtuple
+from time import strptime
 
 import asyncio
 
@@ -44,6 +45,8 @@ def format_tweet(tweet):
         pass
 
     return text
+
+tweet_time = lambda tweet: strptime(tweet['created_at'],'%a %b %d %H:%M:%S +0000 %Y')
 
 class Twitter(Plugin):
 
@@ -202,10 +205,11 @@ class Twitter(Plugin):
             if tweets:
                 latest = tweets[0]
                 if latest['id'] != last_tweet['id']:
-                    last_tweet = latest
-                    await self.send_message(
-                        server.default_channel,
-                        format_tweet(latest)
-                    )
+                    if tweet_time(latest) > tweet_time(last_tweet):
+                        last_tweet = latest
+                        m = await self.send_message(
+                            server.default_channel,
+                            format_tweet(latest)
+                        )
 
         self.debug('No longer monitoring {}'.format(user_id))
