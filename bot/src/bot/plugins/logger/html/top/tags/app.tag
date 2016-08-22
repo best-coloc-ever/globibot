@@ -2,17 +2,17 @@
 
   <h4>Latest messages on server # { serverId }</h4>
   <ul>
-    <li each={ data in latestMessages }> In { data.channel.name } - { data.author.name }: { data.message.clean_content }</li>
+    <li each={ data in latestMessages }> <span style="color:#aaa">#{ data.channel.name }</span> @<a class="latestMSGUser" href={ '/logs/user?id=' + data.author.id }>{ data.author.name }</a>: { data.message.clean_content }</li>
   </ul>
 
   <h4>Top Message count per user on server # { serverId }</h4>
 
-  <table if={ data }>
+  <table if={ data } style="width:100%;min-width:600px;table-layout:fixed;">
     <tr>
-      <th>#</th>
-      <th>User</th>
-      <th>Message count</th>
-      <th>Last active</th>
+      <th style="width:10%">#</th>
+      <th style="width:50%">User</th>
+      <th style="width:20%">Message count</th>
+      <th style="width:20%">Last active</th>
     </tr>
 
     <tr each={ item, i in data }>
@@ -27,12 +27,20 @@
     table, th, td {
       border: 1px solid black;
     }
-
+    a {
+      text-decoration:none;
+    }
+    a:hover {
+      text-decoration:underline;
+    }
+    .lastMSGUser{
+      color:#777;
+    }
     li {
       font-family: Helvetica Neue,Helvetica,sans-serif;
       font-size: 12px;
       line-height: 20px;
-      color: #8c8c9c;
+      color: #444;
       list-style-type: none;
     }
   </style>
