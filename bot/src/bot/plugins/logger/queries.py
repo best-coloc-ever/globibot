@@ -45,7 +45,7 @@ find_logs = '''
 '''
 
 most_logs = '''
-    select author_id, count(*) from log
+    select author_id, count(*), max(stamp) from log
         where       server_id = %(server_id)s
         group by    author_id
         order by    count(*) desc

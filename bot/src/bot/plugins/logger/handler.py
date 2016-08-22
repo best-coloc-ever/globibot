@@ -58,7 +58,7 @@ class LogsApiTopHandler(RequestHandler):
                 user_id = str(r[0])
                 member = cache.member(server, user_id)
                 if member:
-                    results.append(((user_id, member.name), r[1]))
+                    results.append(((user_id, member.name), r[1], r[2].timestamp()))
 
             self.set_header("Content-Type", 'application/json')
             self.write(json_encode(results))
@@ -71,7 +71,7 @@ class LogsApiUserHandler(RequestHandler):
     def get(self, user_id):
         with self.plugin.transaction() as trans:
             content = '''
-                select content from log
+                select content, stamp from log
                     where   author_id = %(author_id)s
             '''
             trans.execute(content, dict(
@@ -79,4 +79,4 @@ class LogsApiUserHandler(RequestHandler):
             ))
 
             self.set_header("Content-Type", 'application/json')
-            self.write(json_encode([r[0] for r in trans.fetchall()]))
+            self.write(json_encode([(r[0], r[1].timestamp()) for r in trans.fetchall()]))

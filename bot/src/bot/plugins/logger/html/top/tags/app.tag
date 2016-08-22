@@ -12,12 +12,14 @@
       <th>#</th>
       <th>User</th>
       <th>Message count</th>
+      <th>Last active</th>
     </tr>
 
     <tr each={ item, i in data }>
       <td>{ i + 1 }</td>
       <td><a href={ '/logs/user?id=' + item[0][0] }>{ item[0][1] }</a></td>
       <td>{ item[1] }</td>
+      <td><timer value={ item[2] }></timer></td>
     </tr>
   </table>
 
@@ -65,8 +67,10 @@
           self.latestMessages.splice(0, self.latestMessages.length - 10);
 
         for (var d of self.data)
-          if (d[0][0] == data.author.id)
+          if (d[0][0] == data.author.id) {
             d[1] += 1;
+            d[2] = new Date().getTime() / 1000;
+          }
 
         self.data.sort(function(a, b) {
           return b[1] - a[1];
@@ -75,6 +79,7 @@
         self.update();
       }
     };
+
   </script>
 
 </app>
