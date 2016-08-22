@@ -1,17 +1,19 @@
 <app>
 
-  <h4>Top words for user { userName } # { userID }</h4>
+  <h3>Top words for user { userName } # { userID }</h4>
 
-  <h6>Message count: { raw_data.length }</h6>
-  <h6>Average message length: { avgLength.toFixed(2) } characters</h6>
-  <h6>Average word count per message: { avgWC.toFixed(2) } words</h6>
+  <h5>
+  Message count: { raw_data.length }<br>
+  Average message length: { avgLength.toFixed(2) } characters<br>
+  Average word count per message: { avgWC.toFixed(2) } words<br>
+  </h5>
 
-  <table if={ data }>
+  <table if={ data } style="width:100%;min-width:600pxtable-layout:fixed">
     <tr>
-      <th>#</th>
-      <th>word</th>
-      <th>count</th>
-      <th>last used</th>
+      <th style="width:10%">#</th>
+      <th style="width:60%">word</th>
+      <th style="width:10%">count</th>
+      <th style="width:10%">last used</th>
     </tr>
 
     <tr each={ item, i in data }>
@@ -25,6 +27,9 @@
   <style scoped>
     table, th, td {
       border: 1px solid black;
+    }
+    table td{
+      overflow-wrap:break-word;
     }
   </style>
 
