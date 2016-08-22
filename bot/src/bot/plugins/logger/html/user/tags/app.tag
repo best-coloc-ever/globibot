@@ -1,6 +1,10 @@
 <app>
 
-  <h4>Top words for user # { userID }</h4>
+  <h4>Top words for user { userName } # { userID }</h4>
+
+  <h6>Message count: { raw_data.length }</h6>
+  <h6>Average message length: { avgLength.toFixed(2) } characters</h6>
+  <h6>Average word count per message: { avgWC.toFixed(2) } words</h6>
 
   <table if={ data }>
     <tr>
@@ -30,6 +34,9 @@
     this.userID = riot.route.query().id;
     this.raw_data = null;
     this.data = [];
+    this.avgLength = 0;
+    this.avgWC = 0;
+    this.userName = '';
 
     $.get({
       url: '/logs/api/user/' + this.userID,
@@ -39,6 +46,15 @@
       },
       error: function(e) { console.log(e); }
     });
+
+    $.get({
+      url: '/user/' + this.userID,
+      success: function(data) {
+        console.log(data)
+        self.userName = data.username;
+        self.update();
+      }
+    })
 
      var ws = new WebSocket('wss://' + window.location.host + '/ws/logs');
 
@@ -60,9 +76,12 @@
       self.data = [];
       var wordMap = {};
       var timeMap = {};
+      var wordCount = 0;
+      var lengths = 0;
       for (var d of self.raw_data) {
         var message = d[0];
         var stamp = d[1];
+        lengths += message.length;
 
         words = message.split(' ');
         for (var word of words) {
@@ -80,6 +99,8 @@
           }
           else
             timeMap[word] = stamp;
+
+          wordCount++;
         }
       }
 
@@ -89,6 +110,8 @@
       }
 
       self.data.sort(function(a, b) { return b[1] - a[1]; });
+      self.avgWC = wordCount / self.raw_data.length;
+      self.avgLength = lengths / self.raw_data.length;
 
       self.update();
     }

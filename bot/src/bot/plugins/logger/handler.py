@@ -39,6 +39,21 @@ class Cache:
 
 cache = Cache()
 
+class UserHandler(RequestHandler):
+
+    def initialize(self, plugin):
+        self.plugin = plugin
+
+    def get(self, user_id):
+        for server in self.plugin.bot.servers:
+            for user in server.members:
+                if user.id == user_id:
+                    self.set_header("Content-Type", 'application/json')
+                    self.write(json_encode(dict(username=user.name)))
+                    return
+
+        self.set_status(400)
+
 class LogsApiTopHandler(RequestHandler):
 
     def initialize(self, plugin):
