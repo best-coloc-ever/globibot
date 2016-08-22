@@ -66,6 +66,7 @@
 
         words = message.split(' ');
         for (var word of words) {
+          word = word.toLowerCase();
           if (!word)
             continue;
           if (word in wordMap)
