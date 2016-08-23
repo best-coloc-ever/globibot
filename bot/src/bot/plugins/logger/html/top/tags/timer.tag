@@ -1,16 +1,34 @@
 <timer>
 
   <div>
-    ~ { fromNow(opts.value) } seconds ago
+    { fromNow(opts.value) } ago
   </div>
 
   <script>
     var self = this;
-    // this.seconds = fromNow(opts.value);
+
+    var shortEnglishHumanizer = humanizeDuration.humanizer({
+      language: 'shortEn',
+      round: true,
+      spacer: '',
+      delimiter: ' ',
+      languages: {
+        shortEn: {
+          y: function() { return 'y' },
+          mo: function() { return 'mo' },
+          w: function() { return 'w' },
+          d: function() { return 'd' },
+          h: function() { return 'h' },
+          m: function() { return 'm' },
+          s: function() { return 's' },
+          ms: function() { return 'ms' },
+        }
+      }
+    });
 
     fromNow(stamp) {
-      var now = new Date().getTime() / 1000;
-      return Math.round(now - stamp);
+      var now = new Date().getTime();
+      return shortEnglishHumanizer(Math.round(now - stamp));
     }
 
     this.on('mount', function() {

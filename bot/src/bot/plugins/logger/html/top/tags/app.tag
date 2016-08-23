@@ -56,6 +56,8 @@
       url: '/logs/api/top/' + this.serverId,
       success: function(data) {
         self.data = data; self.update();
+        for (var d of self.data)
+          d[2] *= 1000;
       },
       error: function(e) { console.log(e); }
     });
@@ -77,7 +79,7 @@
         for (var d of self.data)
           if (d[0][0] == data.author.id) {
             d[1] += 1;
-            d[2] = new Date().getTime() / 1000;
+            d[2] = new Date().getTime();
           }
 
         self.data.sort(function(a, b) {
