@@ -17,17 +17,31 @@
 
   <h2>Recent links</h2>
 
-  <table if={ recentData } style="width:70%;min-width:600px;table-layout:fixed;">
+  <table if={ recentData } style="table-layout:fixed;">
     <tr>
-      <th style="width:40%">link</th>
-      <th style="width:20%">author</th>
-      <th style="width:10%">when</th>
+      <th style="width:70%">Link</th>
+      <th style="width:20%">Author</th>
+      <th style="width:10%">When</th>
     </tr>
 
     <tr each={ info in recentData }>
       <td><a href={ info[0] }>{ info[0] }</a></td>
       <td><user snowflake={ info[1] }></user></td>
       <td><timer value={ info[2] * 1000 }></timer></td>
+    </tr>
+  </table>
+
+  <h2>Shame wall</h2>
+
+  <table if={ shameData } style="width:30%;min-width:600px;table-layout:fixed;">
+    <tr>
+      <th style="width:20%">Author</th>
+      <th style="width:10%">Repost count</th>
+    </tr>
+
+    <tr each={ info in shameData }>
+      <td><user snowflake={ info[0] }></user></td>
+      <td>{ info[1] }</td>
     </tr>
   </table>
 
@@ -43,6 +57,7 @@
     this.serverId = riot.route.query().id;
     this.data = null;
     this.recentData = null;
+    this.shameData = null;
     this.result = null;
 
     $.get({
@@ -50,6 +65,19 @@
       success: function(data) {
         self.data = data;
         self.updateTable();
+      }
+    });
+
+    $.get({
+      url: '/repost/api/shames/' + this.serverId,
+      success: function(data) {
+        self.shameData = [];
+        for (var k in data)
+          self.shameData.push([k, data[k]]);
+        self.shameData.sort(function(a, b) {
+          return b[1] - a[1];
+        });
+        self.update();
       }
     });
 

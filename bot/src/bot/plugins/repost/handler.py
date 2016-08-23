@@ -21,3 +21,12 @@ class RepostAPIHandler(RequestHandler):
     async def get(self, server_id):
         self.set_header("Content-Type", 'application/json')
         self.write(json_encode(self.plugin.links[server_id]))
+
+class RepostAPIShamesHandler(RequestHandler):
+
+    def initialize(self, plugin):
+        self.plugin = plugin
+
+    async def get(self, server_id):
+        self.set_header("Content-Type", 'application/json')
+        self.write(json_encode(self.plugin.shames[server_id]))
