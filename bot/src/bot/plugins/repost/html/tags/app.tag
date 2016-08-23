@@ -7,7 +7,7 @@
   <br>
   <div if={ result != null }>
     <div if={ result }>
-      Your link has already been posted by <user name="user" snowflake={ result[0] }></user> on { new Date(result[1] * 1000) }
+      Your link has already been posted by <user name="user_name" snowflake={ result[0] }></user> on { new Date(result[1] * 1000) }
     </div>
 
     <div if={ !result }>
@@ -89,7 +89,7 @@
       var link = $('#input').val();
       if (link in self.data) {
         this.result = self.data[link];
-        this.tags.user.fetchUser();
+        this.tags.user_name.fetchUser();
       }
       else
         this.result = false;
