@@ -4,7 +4,7 @@ from bot.lib.plugin import Plugin
 from bot.lib.helpers import formatting as f
 # from bot.lib.helpers.hooks import master_only
 
-from .handler import RepostStaticHandler, RepostHandler, RepostAPIHandler, RepostAPIShamesHandler
+from .handler import RepostStaticHandler, RepostHandler, RepostAPIHandler, RepostAPIShamesHandler, RepostUserHandler,RepostAPIUserHandler
 
 from collections import defaultdict
 from datetime import datetime
@@ -17,13 +17,15 @@ URL_PATTERN = re.compile('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[
 class Repost(Plugin):
 
     def load(self):
-        self.shames = defaultdict(lambda: defaultdict(int))
+        self.shames = defaultdict(lambda: defaultdict(list))
         self.links = self.load_links()
 
         self.add_web_handlers(
             (r'/repost/api/shames/(?P<server_id>\w+)', RepostAPIShamesHandler, dict(plugin=self)),
+            (r'/repost/api/user/(?P<server_id>\w+)/(?P<user_id>\w+)', RepostAPIUserHandler, dict(plugin=self)),
             (r'/repost/api/(?P<server_id>\w+)', RepostAPIHandler, dict(plugin=self)),
             (r'/repost', RepostHandler),
+            (r'/repost/user', RepostUserHandler),
             (r'/repost/(.*)', RepostStaticHandler),
         )
 
@@ -31,7 +33,7 @@ class Repost(Plugin):
         for url in URL_PATTERN.findall(message.content):
             try:
                 author_id, stamp = self.links[message.server.id][url]
-                self.shames[message.server.id][message.author.id] += 1
+                self.shames[message.server.id][message.author.id].append((url, time()))
                 await self.send_message(
                     message.channel,
                     '🔔 {} you posted a link originally posted by {} ({} UTC) 🔔\nPlease visit {} for more information'
@@ -59,7 +61,7 @@ class Repost(Plugin):
             for author_id, stamp, server_id, content in trans.fetchall():
                 for url in URL_PATTERN.findall(content):
                     if url in links[str(server_id)]:
-                        self.shames[str(server_id)][str(author_id)] += 1
+                        self.shames[str(server_id)][str(author_id)].append((url, stamp.timestamp()))
                     else:
                         links[str(server_id)][url] = (str(author_id), stamp.timestamp())
 

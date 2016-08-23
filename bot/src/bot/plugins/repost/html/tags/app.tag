@@ -40,7 +40,11 @@
     </tr>
 
     <tr each={ info in shameData }>
-      <td><user snowflake={ info[0] }></user></td>
+      <td>
+        <a href={ "/repost/user?user_id=" + info[0] + "&server_id=" + serverId  }>
+          <user snowflake={ info[0] }></user>
+        </a>
+      </td>
       <td>{ info[1] }</td>
     </tr>
   </table>
@@ -73,7 +77,7 @@
       success: function(data) {
         self.shameData = [];
         for (var k in data)
-          self.shameData.push([k, data[k]]);
+          self.shameData.push([k, data[k].length]);
         self.shameData.sort(function(a, b) {
           return b[1] - a[1];
         });
