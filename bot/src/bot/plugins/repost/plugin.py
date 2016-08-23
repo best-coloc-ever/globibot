@@ -30,6 +30,12 @@ class Repost(Plugin):
         )
 
     async def on_new(self, message):
+        await self.process_message(message)
+
+    async def on_edit(self, before, after):
+        await self.process_message(after)
+
+    async def process_message(self, message):
         warned = False
         for url in URL_PATTERN.findall(message.content):
             try:
