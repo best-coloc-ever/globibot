@@ -35,7 +35,7 @@ class Repost(Plugin):
                         .format(
                             message.author.mention,
                             f.mention(author_id),
-                            datetime.fromtimestamp(stamp).strftime('%m-%e-%y %H:%M'),
+                            datetime.fromtimestamp(stamp).strftime('%Y-%m-%d %H:%M:%S'),
                             'https://globibot.com/repost?id={}'.format(message.server.id)
                         ),
                     delete_after = 30
