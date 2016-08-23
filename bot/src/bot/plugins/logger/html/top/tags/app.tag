@@ -11,8 +11,8 @@
     <tr>
       <th style="width:10%">#</th>
       <th style="width:50%">User</th>
-      <th style="width:20%">Message count</th>
-      <th style="width:20%">Last active</th>
+      <th style="width:20%; color: blue"><a onclick={ changeSort.bind(undefined, compareCount) }>Message count</a></th>
+      <th style="width:20%; color: blue"><a onclick={ changeSort.bind(undefined, compareActive) }>Last active</a></th>
     </tr>
 
     <tr each={ item, i in data }>
@@ -52,6 +52,22 @@
     this.data = null;
     this.latestMessages = [];
 
+    this.sortFn = self.compareCount;
+
+    compareCount(a, b) {
+      return b[1] - a[1];
+    }
+
+    compareActive(a, b) {
+      return b[2] - a[2];
+    }
+
+    changeSort(sort) {
+      self.sortFn = sort;
+      self.data.sort(self.sortFn);
+      self.update();
+    }
+
     $.get({
       url: '/logs/api/top/' + this.serverId,
       success: function(data) {
@@ -82,9 +98,7 @@
             d[2] = new Date().getTime();
           }
 
-        self.data.sort(function(a, b) {
-          return b[1] - a[1];
-        })
+        self.data.sort(self.sortFn);
 
         self.update();
       }
