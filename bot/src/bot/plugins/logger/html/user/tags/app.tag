@@ -20,7 +20,7 @@
       <td>{ i + 1 }</td>
       <td>{ item[0] }</td>
       <td>{ item[1] }</td>
-      <td><timer value={ item[2] }></timer></td>
+      <td><timer value={ item[2] * 1000 }></timer></td>
     </tr>
   </table>
 
