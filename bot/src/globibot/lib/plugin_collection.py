@@ -1,5 +1,5 @@
 from watchdog.observers import Observer as PathObserver
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import PatternMatchingEventHandler
 
 from importlib import import_module, reload
 from traceback import format_exc
@@ -8,9 +8,11 @@ from types import ModuleType
 from queue import Queue
 
 from utils.logging import logger
-import bot.plugins as plugins_root
 
 import asyncio
+
+import sys
+import os
 
 def unsafe(action, *args, **kwargs):
     try:
@@ -18,13 +20,14 @@ def unsafe(action, *args, **kwargs):
     except:
         logger.error(format_exc())
 
-class PluginReloader(FileSystemEventHandler):
+class PluginReloader(PatternMatchingEventHandler):
 
-    def __init__(self, name, *args):
+    def __init__(self, plugin_dir, name, *args):
+        super().__init__(patterns=("*.py",))
         self.name = name
         self.args = args
-        self.scope = '{}.{}'.format(plugins_root.__name__, name)
-        self.import_args = ('.{}'.format(name), plugins_root.__name__)
+        self.scope = '{}.{}'.format(plugin_dir, name)
+        self.import_args = (self.scope,)
 
         self.plugin = None
         self.module_imported = False
@@ -33,7 +36,8 @@ class PluginReloader(FileSystemEventHandler):
         asyncio.ensure_future(self.watch_modified())
 
     def on_modified(self, modified):
-        self.reload_queue.put(modified)
+        if self.reload_queue.empty():
+            self.reload_queue.put(modified)
 
     def initialize(self):
         unsafe(self.load_plugin)
@@ -79,20 +83,26 @@ class PluginReloader(FileSystemEventHandler):
             else:
                 unsafe(self.load_plugin)
 
+            await asyncio.sleep(1) # Small debounce
+
             self.reload_queue.task_done()
 
 class PluginCollection:
 
-    def __init__(self, bot, plugin_descriptors):
+    def __init__(self, bot, plugin_path):
+        plugin_abs_path = os.path.join(os.getcwd(), plugin_path)
+        parent_plugin_abs_path, plugin_dir = os.path.split(plugin_abs_path)
+        sys.path.insert(0, parent_plugin_abs_path)
+
         self.path_observer = PathObserver()
         self.plugin_reloaders = []
 
-        for name, config in plugin_descriptors:
-            reloader = PluginReloader(name, bot, config)
+        for name, config in bot.plugin_descriptors:
+            reloader = PluginReloader(plugin_dir, name, bot, config)
             self.plugin_reloaders.append(reloader)
             self.path_observer.schedule(
                 reloader,
-                path_join(plugins_root.__path__._path[0], name),
+                path_join(plugin_abs_path, name),
                 recursive=True
             )
 

@@ -11,7 +11,7 @@ from . import constants as c
 
 class Globibot(DiscordClient):
 
-    def __init__(self, config, db_config, web):
+    def __init__(self, config, db_config, web, plugin_path):
         super().__init__()
 
         self.db = db_connect(
@@ -21,7 +21,7 @@ class Globibot(DiscordClient):
 
         self.config = config
         self.web = web
-        self.plugin_collection = PluginCollection(self, self.plugin_descriptors)
+        self.plugin_collection = PluginCollection(self, plugin_path)
 
         self.token = self.config.get(c.GLOBIBOT_TOKEN_KEY)
 
