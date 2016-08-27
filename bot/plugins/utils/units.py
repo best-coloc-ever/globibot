@@ -1,5 +1,5 @@
 from funcparserlib import parser as fp
-from bot.lib.helpers import parsing as p
+from globibot.lib.helpers import parsing as p
 
 class Value:
 
@@ -72,7 +72,6 @@ class Temperature(Unit): pass
 fahrenheit = Temperature('°F', 'fahrenheit', 'fahrenheits', 'f')
 
 centigrad  = Temperature('°C', 'centigrad',  'centigrads',  'c')
-kelvin     = Temperature('°K',  'kelvin', 'kelvins', 'k')
 
 
 UNITS = [
@@ -87,7 +86,7 @@ UNITS = [
     ml, l,
     # Temperatures
     fahrenheit,
-    centigrad, kelvin
+    centigrad
 ]
 
 UNITS_BY_NAME = dict(
@@ -137,7 +136,6 @@ SYSTEM_CONVERSIONS = [
 
     Conversion(fahrenheit, centigrad, lambda f: (f - 32) / 1.8),
     Conversion(centigrad, fahrenheit, lambda c: c * 1.8 + 32),
-    Conversion(kelvin, fahrenheit, lambda k: k * 1.8 - 459.67)
 ]
 
 SYSTEM_CONVERSIONS_BY_UNIT = dict(

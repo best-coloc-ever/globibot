@@ -1,4 +1,4 @@
-from bot.lib.errors import PluginException
+from globibot.lib.errors import PluginException
 
 class UserNotFound(PluginException):
 

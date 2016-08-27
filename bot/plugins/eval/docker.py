@@ -1,4 +1,4 @@
-from bot.lib.helpers.async_iterator import AsyncIterator
+from globibot.lib.helpers.async_iterator import AsyncIterator
 
 from docker import Client as DockerClient
 from time import time

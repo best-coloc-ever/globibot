@@ -1,7 +1,7 @@
-from bot.lib.plugin import Plugin
-from bot.lib.decorators import command
-from bot.lib.helpers import parsing as p
-from bot.lib.helpers.hooks import master_only
+from globibot.lib.plugin import Plugin
+from globibot.lib.decorators import command
+from globibot.lib.helpers import parsing as p
+from globibot.lib.helpers.hooks import master_only
 
 from instagram.client import InstagramAPI
 

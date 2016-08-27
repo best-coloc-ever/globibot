@@ -8,6 +8,7 @@ from .lib.plugin import Plugin
 from .lib.plugin_collection import PluginCollection
 
 from . import constants as c
+from . import api
 
 class Globibot(DiscordClient):
 
@@ -31,6 +32,12 @@ class Globibot(DiscordClient):
         ]
 
         self.enabled_servers = self.config.get(c.ENABLED_SERVERS_KEY, [])
+
+        self.web.add_handlers(r'.*$', (
+            (r'/api/user/(?P<user_id>\d+)', api.UserHandler, dict(bot=self)),
+            (r'/api/users/(?P<server_id>\d+)', api.UsersHandler, dict(bot=self)),
+            (r'/api/servers', api.ServersHandler, dict(bot=self)),
+        ))
 
     '''
     Events
@@ -93,15 +100,27 @@ class Globibot(DiscordClient):
     Helpers
     '''
 
-    def is_master(self, who):
-        return who.id in self.masters
-
     async def boot(self):
         logger.info('Globibot is booting up...')
         await self.start(self.token)
 
     async def shutdown(self):
         await self.logout()
+
+    def is_master(self, who):
+        return who.id in self.masters
+
+    def find_user(self, user_id):
+        for server in self.servers:
+            for user in server.members:
+                if user.id == user_id:
+                    return user
+
+    def find_server(self, server_id):
+        return next(
+            (server for server in self.servers if server.id == server_id),
+            None
+        )
 
     '''
     Details

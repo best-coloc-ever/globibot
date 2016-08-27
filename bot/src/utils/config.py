@@ -1,7 +1,6 @@
 import yaml
 import sys
 
-CONFIG_FILE = 'config.yaml'
 BOT_CONFIG_KEY = 'bot'
 WEB_CONFIG_KEY = 'web'
 DB_CONFIG_KEY = 'db'
@@ -28,14 +27,17 @@ def load(file):
 
     return config
 
-config = load(CONFIG_FILE)
+def load_config(file):
+    config = load(file)
 
-try:
-    bot_config = config[BOT_CONFIG_KEY]
-    web_config = config[WEB_CONFIG_KEY]
-    db_config  = config[DB_CONFIG_KEY]
-except KeyError as e:
-    sys.exit(
-        'Missing top level configuration key: "{}"'
-            .format(e)
-    )
+    try:
+        bot_config = config[BOT_CONFIG_KEY]
+        web_config = config[WEB_CONFIG_KEY]
+        db_config  = config[DB_CONFIG_KEY]
+    except KeyError as e:
+        sys.exit(
+            'Missing top level configuration key: "{}"'
+                .format(e)
+        )
+
+    return (bot_config, web_config, db_config)

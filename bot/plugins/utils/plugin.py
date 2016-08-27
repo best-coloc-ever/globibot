@@ -1,9 +1,9 @@
-from bot.lib.plugin import Plugin
-from bot.lib.decorators import command
+from globibot.lib.plugin import Plugin
+from globibot.lib.decorators import command
 
-from bot.lib.helpers import parsing as p
-from bot.lib.helpers import formatting as f
-from bot.lib.helpers.hooks import master_only
+from globibot.lib.helpers import parsing as p
+from globibot.lib.helpers import formatting as f
+from globibot.lib.helpers.hooks import master_only
 
 from .units import unit_value_parser, system_convert, sum_units
 
@@ -18,7 +18,7 @@ class Utils(Plugin):
         for prefix in Utils.PREFIXES
     ]).named('[{}]{}'.format(''.join(Utils.PREFIXES), s)) >> p.to_s
 
-    @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'))
+    @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'), master_only)
     async def convert(self, message, unit_values):
         converted = [(uv, system_convert(uv)) for uv in unit_values]
         output = ['{} = {}'.format(uv, conv) for uv, conv in converted]
