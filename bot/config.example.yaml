@@ -1,7 +1,7 @@
 bot:
   token: 'Your bot token'
   plugins:
-    foo:    {}
+    # foo:    {}
     logger: {}
     meta:   {}
     eval:   {}

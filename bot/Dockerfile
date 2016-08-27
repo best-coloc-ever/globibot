@@ -24,4 +24,9 @@ RUN apt-get update -y && apt-get install -y \
 ADD . /app
 WORKDIR /app
 
-CMD ["python3", "src/main.py", "-p", "plugins", "-c", "config.yaml"]
+CMD [ \
+    "python3", "src/main.py", \
+    "--plugin-path", "plugins", \
+    "--config-path", "config.yaml", \
+    "--static-root", "/web" \
+]
