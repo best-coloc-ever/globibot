@@ -1,10 +1,12 @@
 bot:
   token: 'Your bot token'
   plugins:
-    # hello : {}
+    # foo:    {}
     logger: {}
+    meta:   {}
     eval:   {}
     utils:  {}
+    stats:  {}
     chat:   {}
     twitch:
       client_id: 'your twitch client id'
@@ -13,6 +15,9 @@ bot:
       consumer_secret: 'your consumer secret'
       access_token: 'your access token'
       access_token_secret: 'your access token secret'
+    instagram:
+      access_token: 'your access token'
+      client_secret: 'your client secret'
     help:
       enabled:
         - logger

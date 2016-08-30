@@ -14,7 +14,8 @@ RUN pip install \
     pynacl \
     git+https://github.com/docker/docker-py@master \
     watchdog \
-    cleverbot
+    cleverbot \
+    python-instagram-ext
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
@@ -23,4 +24,9 @@ RUN apt-get update -y && apt-get install -y \
 ADD . /app
 WORKDIR /app
 
-CMD ["python3", "src/main.py"]
+CMD [ \
+    "python3", "src/main.py", \
+    "--plugin-path", "plugins", \
+    "--config-path", "config.yaml", \
+    "--static-root", "/web" \
+]
