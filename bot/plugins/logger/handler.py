@@ -8,19 +8,19 @@ from . import queries as q
 class LogsStaticHandler(RequestHandler):
 
     async def get(self, test):
-        with open('src/bot/plugins/logger/html/{}'.format(test)) as f:
+        with open('./plugins/logger/html/{}'.format(test)) as f:
             self.write(f.read())
 
 class LogsTopHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/logger/html/top/index.html') as f:
+        with open('./plugins/logger/html/top/index.html') as f:
             self.write(f.read())
 
 class LogsUserHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/logger/html/user/index.html') as f:
+        with open('./plugins/logger/html/user/index.html') as f:
             self.write(f.read())
 
 class Cache:

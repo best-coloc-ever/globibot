@@ -8,19 +8,19 @@ from time import time
 class StatsStaticHandler(RequestHandler):
 
     async def get(self, test):
-        with open('src/bot/plugins/stats/html/{}'.format(test)) as f:
+        with open('./plugins/stats/html/{}'.format(test)) as f:
             self.write(f.read())
 
 class StatsUserHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/stats/html/user_top/index.html') as f:
+        with open('./plugins/stats/html/user_top/index.html') as f:
             self.write(f.read())
 
 class StatsGameHandler(RequestHandler):
 
     async def get(self):
-        with open('src/bot/plugins/stats/html/game_top/index.html') as f:
+        with open('./plugins/stats/html/game_top/index.html') as f:
             self.write(f.read())
 
 class Cache:
