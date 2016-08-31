@@ -77,7 +77,7 @@ class Eval(Plugin):
             run_stream = self.docker.run_async(
                 directory,
                 environment.image,
-                snippet.code
+                message.author.id
             )
             format_data = lambda line: line.decode('utf8')
 
