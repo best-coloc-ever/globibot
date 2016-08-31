@@ -47,3 +47,21 @@ set_language = '''
     set    language = %(language)s
     where  id = %(id)s
 '''
+
+get_snippet = '''
+    select id, author_id, name, language, code
+    from   eval_snippet
+    where  author_id = %(author_id)s
+    and    name = %(name)s
+'''
+
+get_snippets = '''
+    select id, author_id, name, language, code
+    from   eval_snippet
+    where  author_id = %(author_id)s
+'''
+
+save_snippet = '''
+    insert into eval_snippet (author_id, name, language, code)
+    values                   (%(author_id)s, %(name)s, %(language)s, %(code)s)
+'''

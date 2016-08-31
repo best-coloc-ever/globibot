@@ -18,6 +18,11 @@ Environment = namedtuple(
     ['id', 'author_id', 'name', 'language', 'image', 'dockerfile']
 )
 
+Snippet = namedtuple(
+    'Snippet',
+    ['id', 'author_id', 'name', 'language', 'code']
+)
+
 class Eval(Plugin):
 
     def load(self):
@@ -27,6 +32,8 @@ class Eval(Plugin):
             trans.execute(q.fetch_behaviors)
             self.behaviors = [row[0] for row in trans.fetchall()]
             self.default_behavior = self.behaviors[0]
+
+        self.last_snippets = dict()
 
     '''
     Commands
@@ -46,48 +53,62 @@ class Eval(Plugin):
                 'type `!eval help` for more information'
             )
 
+        self.last_snippets[message.author.id] = snippet
+
         if behavior != 'auto':
             return
 
-        environment = self.get_environment(snippet.language, message.author.id)
-        if environment is None:
-            await self.send_message(
-                message.channel,
-                '{} You have no environment associated with the language `{}`'
-                    .format(message.author.mention, snippet.language),
-                delete_after=10
-            )
-        else:
-            directory = '/tmp/globibot/{}'.format(message.author.id)
-            os.makedirs(directory, exist_ok=True)
-            with open('{}/{}'.format(directory, 'code.snippet'), 'w') as f:
-                f.write(snippet.code)
+        await self.run_snippet(message, snippet, "")
 
-            await self.send_message(
-                message.channel,
-                '{} Running your `{}` snippet in `{}`'
-                    .format(message.author.mention, snippet.language, environment.name),
-                delete_after=5
-            )
-            response_stream = await self.send_message(
-                message.channel,
-                '`Waiting for output`'
-            )
+    @command(eval_prefix + p.string('run'))
+    async def eval_run(self, message):
+        behavior = self.get_behavior(message.author.id)
+        if behavior == 'off':
+            return
 
-            run_stream = self.docker.run_async(
-                directory,
-                environment.image,
-                message.author.id
-            )
-            format_data = lambda line: line.decode('utf8')
+        try:
+            snippet = self.last_snippets[message.author.id]
+            run_idx = message.content.index('run')
+            await self.run_snippet(message, snippet, message.content[run_idx + len('run'):])
+        except KeyError:
+            pass
 
+    @command(eval_prefix + p.string('save') + p.bind(p.word, 'name'))
+    async def eval_save(self, message, name):
+        try:
+            snippet = self.last_snippets[message.author.id]
+            snippets = self.get_snippets(message.author.id)
             try:
-                await self.stream_data(response_stream, run_stream, format_data)
-                await self.send_message(message.channel, '`Exited`', delete_after=10)
-            except AsyncDockerClient.Timeout:
-                await self.send_message(message.channel, '`Evaluation timed out`')
+                next(s for s in snippets if s.name == name)
+                await self.send_message(
+                    message.channel,
+                    '{} You already have a snippet named `{}`'
+                        .format(message.author.mention, name),
+                    delete_after = 30
+                )
+            except StopIteration:
+                if self.save_snippet(message.author.id, name, snippet):
+                    await self.send_message(
+                        message.channel,
+                        '{} your last snippet was saved as `{}`\n use `/{}` to run it'
+                            .format(message.author.mention, name, name),
+                        delete_after = 30
+                    )
+        except KeyError:
+            pass
 
-            rmtree(directory)
+    @command(p.bind(p.word, 'name'))
+    async def command_run(self, message, name):
+        if not name.startswith('/'):
+            return
+
+        name = name[1:]
+        snippet = self.get_snippet(message.author.id, name)
+        if snippet:
+            name_idx = message.content.index(name)
+            args = message.content[name_idx + len(name):]
+            await self.run_snippet(message, snippet, args)
+
 
     eval_env_prefix = eval_prefix + p.string('env')
 
@@ -288,6 +309,48 @@ class Eval(Plugin):
     details
     '''
 
+    async def run_snippet(self, message, snippet, args):
+        environment = self.get_environment(snippet.language, message.author.id)
+        if environment is None:
+            await self.send_message(
+                message.channel,
+                '{} You have no environment associated with the language `{}`'
+                    .format(message.author.mention, snippet.language),
+                delete_after=10
+            )
+        else:
+            directory = '/tmp/globibot/{}'.format(message.author.id)
+            os.makedirs(directory, exist_ok=True)
+            with open('{}/{}'.format(directory, 'code.snippet'), 'w') as f:
+                f.write(snippet.code)
+
+            await self.send_message(
+                message.channel,
+                '{} Running your `{}` snippet in `{}`'
+                    .format(message.author.mention, snippet.language, environment.name),
+                delete_after=5
+            )
+            response_stream = await self.send_message(
+                message.channel,
+                '`Waiting for output`'
+            )
+
+            run_stream = self.docker.run_async(
+                args,
+                directory,
+                environment.image,
+                message.author.id
+            )
+            format_data = lambda line: line.decode('utf8')
+
+            try:
+                await self.stream_data(response_stream, run_stream, format_data)
+                await self.send_message(message.channel, '`Exited`', delete_after=10)
+            except AsyncDockerClient.Timeout:
+                await self.send_message(message.channel, '`Evaluation timed out`')
+
+            rmtree(directory)
+
     TAG_PREFIX = 'globibot_build'
     def tag_name(self, name, user_id=None):
         return '{}_{}:{}'.format(
@@ -352,3 +415,33 @@ class Eval(Plugin):
                 id       = env_id,
                 language = language
             ))
+
+    def get_snippet(self, user_id, name):
+        with self.transaction() as trans:
+            trans.execute(q.get_snippet, dict(
+                author_id = user_id,
+                name      = name
+            ))
+
+            data = trans.fetchone()
+            if data:
+                return Snippet(*data)
+
+    def get_snippets(self, user_id):
+        with self.transaction() as trans:
+            trans.execute(q.get_snippets, dict(
+                author_id = user_id
+            ))
+
+            return [Snippet(*row) for row in trans.fetchall()]
+
+    def save_snippet(self, user_id, name, snippet):
+        with self.transaction() as trans:
+            trans.execute(q.save_snippet, dict(
+                author_id = user_id,
+                name      = name,
+                language  = snippet.language,
+                code      = snippet.code
+            ))
+
+            return True

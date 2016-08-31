@@ -35,7 +35,7 @@ class AsyncDockerClient(DockerClient):
 
         return iterator
 
-    def run_async(self, directory, image, user_id):
+    def run_async(self, command, directory, image, user_id):
         if user_id not in self.user_volumes:
             self.create_volume_for(user_id)
 
@@ -50,7 +50,8 @@ class AsyncDockerClient(DockerClient):
             volumes     = [WORK_DIR, PERSISTENT_DATA_DIR],
             image       = image,
             working_dir = WORK_DIR,
-            host_config = host_config
+            host_config = host_config,
+            command     = command
         )
         self.start(container)
 
