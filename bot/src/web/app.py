@@ -4,15 +4,13 @@ from tornado.platform.asyncio import AsyncIOMainLoop
 from utils.logging import logger
 
 from . import constants as c
-from . import handlers
+# from . import handlers
 
 def init_web_app(config, static_root):
     AsyncIOMainLoop().install()
 
     routes = [
-        (r'/', handlers.RootHandler, dict(path=static_root)),
-        (r'/(favicon\.png)', web.StaticFileHandler, dict(path=static_root)),
-        (r'/(styles\.css)', web.StaticFileHandler, dict(path=static_root)),
+
     ]
 
     port = config.get(c.WEB_PORT_KEY, c.DEFAULT_WEB_PORT)

@@ -1,6 +1,7 @@
 version: '2'
 
 volumes:
+  # Database storage
   globibot-data: {}
 
 services:
@@ -8,23 +9,21 @@ services:
   bot:
     build: ./bot
     volumes:
-      - './bot/:/app:ro' # Sources
-      - './web/static:/web' # Static web files
-      - '/var/run/docker.sock:/var/run/docker.sock' # Make the use of the host's docker daemon possible
-      - '/tmp/globibot:/tmp/globibot' # Shared host storage (to solve inceptive docker volumes issues)
+      # Sources
+      - './bot:/app:ro'
+      # Make the use of the host's docker daemon possible
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      # Shared host storage (to allow inceptive docker bind mounts)
+      - '/tmp/globibot:/tmp/globibot'
 
   db:
     build: ./db
     volumes:
       # Main data volume
       - 'globibot-data:/var/lib/postgresql/data'
-      # migration system
-      - './db/migrate:/flyway/sql'
-      - './db/flyway.conf:/flyway/conf/flyway.conf'
 
   web:
-    build: ./web
-    ports:
-      - '443:443'
+    build: ./web/server
     volumes:
-      - './web/static:/static:ro'
+      # Static web files
+      - './web/app:/web'

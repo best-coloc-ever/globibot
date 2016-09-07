@@ -5,23 +5,9 @@ from collections import defaultdict
 
 from . import queries as q
 
-class LogsStaticHandler(RequestHandler):
+import jwt
 
-    async def get(self, test):
-        with open('./plugins/logger/html/{}'.format(test)) as f:
-            self.write(f.read())
-
-class LogsTopHandler(RequestHandler):
-
-    async def get(self):
-        with open('./plugins/logger/html/top/index.html') as f:
-            self.write(f.read())
-
-class LogsUserHandler(RequestHandler):
-
-    async def get(self):
-        with open('./plugins/logger/html/user/index.html') as f:
-            self.write(f.read())
+JWT_SALT = 'Gl0b1Bo7'
 
 class Cache:
 
@@ -39,44 +25,38 @@ class Cache:
 
 cache = Cache()
 
-class UserHandler(RequestHandler):
-
-    def initialize(self, plugin):
-        self.plugin = plugin
-
-    def get(self, user_id):
-        for server in self.plugin.bot.servers:
-            for user in server.members:
-                if user.id == user_id:
-                    self.set_header("Content-Type", 'application/json')
-                    self.write(json_encode(dict(username=user.name)))
-                    return
-
-        self.set_status(400)
-
 class LogsApiTopHandler(RequestHandler):
 
     def initialize(self, plugin):
         self.plugin = plugin
 
-    def get(self, server_id):
-        server = next(server for server in self.plugin.bot.servers if server.id == server_id)
+    def get(self):
+        auth = self.request.headers.get('Authorization')
+        if auth:
+            token = auth[7:]
+            payload = jwt.decode(token, JWT_SALT, algorithms=['HS256'])
+            self.plugin.info(payload)
+            user = self.plugin.bot.find_user(payload['user'])
+            if user:
+                server = user.server
 
-        with self.plugin.transaction() as trans:
-            trans.execute(q.most_logs, dict(
-                server_id = server_id,
-                limit     = 1000
-            ))
+                with self.plugin.transaction() as trans:
+                    trans.execute(q.most_logs, dict(
+                        server_id = server.id,
+                        limit     = 200
+                    ))
 
-            results = []
-            for r in trans.fetchall():
-                user_id = str(r[0])
-                member = cache.member(server, user_id)
-                if member:
-                    results.append(((user_id, member.name), r[1], r[2].timestamp()))
+                    results = dict(server_id=server.id, data=[])
+                    for r in trans.fetchall():
+                        user_id = str(r[0])
+                        member = cache.member(server, user_id)
+                        if member:
+                            results['data'].append(((user_id, member.name), r[1], r[2].timestamp()))
 
-            self.set_header("Content-Type", 'application/json')
-            self.write(json_encode(results))
+                    self.set_header("Content-Type", 'application/json')
+                    self.write(json_encode(results))
+        else:
+            self.set_status(400)
 
 class LogsApiUserHandler(RequestHandler):
 

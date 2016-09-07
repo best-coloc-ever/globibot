@@ -9,21 +9,17 @@ from itertools import groupby
 from .ws_handler import LoggerWebSocketHandler
 from . import queries as q
 
-from .handler import LogsTopHandler, LogsUserHandler, LogsApiTopHandler, LogsStaticHandler, LogsApiUserHandler, UserHandler
+from .handler import LogsApiTopHandler, LogsApiUserHandler
 
 class Logger(Plugin):
 
     def load(self):
-        self.ws_consumers = set()
+        self.ws_consumers = dict()
 
         self.add_web_handlers(
             (r'/ws/logs', LoggerWebSocketHandler, dict(module=self)),
-            (r'/logs/top', LogsTopHandler),
-            (r'/logs/user', LogsUserHandler),
-            (r'/logs/api/top/(?P<server_id>\w+)', LogsApiTopHandler, dict(plugin=self)),
-            (r'/logs/api/user/(?P<user_id>\w+)', LogsApiUserHandler, dict(plugin=self)),
-            (r'/logs/(.*)', LogsStaticHandler),
-            (r'/user/(?P<user_id>\w+)', UserHandler, dict(plugin=self)),
+            (r'/logs/top', LogsApiTopHandler, dict(plugin=self)),
+            (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, dict(plugin=self)),
         )
 
     '''

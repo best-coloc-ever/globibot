@@ -56,6 +56,10 @@ class Plugin:
     Helpers
     '''
 
+    @property
+    def name(self):
+        return self.__class__.__name__.lower()
+
     def log(self, level, message):
         extra = dict(plugin_name=self.__class__.__name__)
         logger.log(level, message, extra=extra)
