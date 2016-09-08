@@ -87,11 +87,6 @@ ServerHandler = make_resource_handler(
     ('id', 'name', 'icon_url')
 )
 
-FindHandler = make_resource_handler(
-    lambda bot, user_name: bot.find_user_by_name(user_name),
-    ('id', 'name', 'avatar_url')
-)
-
 def get_members(bot, server_id):
     server = bot.find_server(server_id)
     if server:
@@ -111,6 +106,22 @@ PluginsHandler = make_collection_handler(
     lambda bot: bot.plugin_collection.plugins,
     ('name', )
 )
+
+class FindHandler(RequestHandlerWithBotContext):
+
+    def get(self):
+        try:
+            user_name = self.get_query_argument('user_name')
+        except MissingArgumentError:
+            self.set_status(HTTPStatus.BAD_REQUEST)
+            return
+
+        user = self.bot.find_user_by_name(user_name)
+        if user:
+            data = extract_attributes(user, ('id', 'name', 'avatar_url'))
+            self.write(json_encode(data))
+        else:
+            self.set_status(HTTPStatus.BAD_REQUEST)
 
 tokenCache = dict()
 

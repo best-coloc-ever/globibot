@@ -39,7 +39,7 @@ class Globibot(DiscordClient):
             (r'/api/send-registration-token/(?P<user_id>\d+)', api.RegistrationTokenHandler, dict(bot=self)),
             (r'/api/user/(?P<user_id>\d+)', api.UserHandler, dict(bot=self)),
             (r'/api/users/(?P<server_id>\d+)', api.UsersHandler, dict(bot=self)),
-            (r'/api/find/(?P<user_name>.+)', api.FindHandler, dict(bot=self)),
+            (r'/api/find', api.FindHandler, dict(bot=self)),
             (r'/api/server/(?P<server_id>\d+)', api.ServerHandler, dict(bot=self)),
             (r'/api/servers', api.ServersHandler, dict(bot=self)),
             (r'/api/plugins', api.PluginsHandler, dict(bot=self)),
