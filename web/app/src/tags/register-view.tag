@@ -109,7 +109,7 @@
       if (searchDebouncer)
         clearInterval(searchDebouncer)
 
-      let username = event.srcElement.value
+      let username = event.target.value
       searchDebouncer = setTimeout(() => {
         self.searchingUsername = true
         self.usernameValidated = false
