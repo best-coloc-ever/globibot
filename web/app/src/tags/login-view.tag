@@ -64,18 +64,14 @@
 
       let requestSettings = {
         method: 'POST',
-        body: form
+        body: form,
+        credentials: 'same-origin'
       }
 
       fetch('/bot/api/login', requestSettings)
         .then(response => {
           if (response.ok) {
-            response.json().then(j => {
-              self.app.user = j.user
-              self.app.token = j.token
-              self.app.trigger('credential-changed')
-              riot.route('/home')
-            })
+            riot.route('/home')
           }
           else {
             let data = { message: 'Invalid credentials' }

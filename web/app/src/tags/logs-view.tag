@@ -44,11 +44,12 @@
         'Authorization': 'Bearer ' + this.opts.app.token
       })
 
-      fetch('/bot/logs/top', { headers: headers })
+      fetch('/bot/logs/top', { headers: headers, credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
           self.serverId = data.server_id
           self.data = data.data
+          console.log(data)
           self.update()
         })
     })

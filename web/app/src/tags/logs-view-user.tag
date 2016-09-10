@@ -62,7 +62,7 @@
         'Authorization': 'Bearer ' + this.opts.app.token
       })
 
-      fetch('/bot/logs/user/' + self.userId, { headers: headers })
+      fetch('/bot/logs/user/' + self.userId, { headers: headers, credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
           self.raw_data = data

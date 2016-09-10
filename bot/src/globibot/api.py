@@ -11,7 +11,6 @@ from binascii import hexlify
 
 import random
 import string
-import jwt
 
 def extract_attributes(obj, attribute_names):
     attrs = dict()
@@ -210,8 +209,6 @@ class RegistrationHandler(RequestHandlerWithBotContext):
 
 class LoginHandler(RequestHandlerWithBotContext):
 
-    JWT_SALT = 'Gl0b1Bo7'
-
     def post(self):
         try:
             user_name = self.get_body_argument('user')
@@ -231,12 +228,8 @@ class LoginHandler(RequestHandlerWithBotContext):
 
         logger.info('password matched')
 
-        data = dict(
-            user = extract_attributes(user, ('id', 'name', 'avatar_url')),
-            token = self.make_token(user).decode('utf-8')
-        )
         self.set_header("Content-Type", 'application/json')
-        self.write(json_encode(data))
+        self.set_secure_cookie('user', user.id, expires_days=3)
 
     def check_user(self, user, password):
         with Transaction(self.bot.db) as trans:
@@ -264,12 +257,16 @@ class LoginHandler(RequestHandlerWithBotContext):
 
         return False
 
-    def make_token(self, user):
-        payload = dict(
-            user = user.id
-        )
-        return jwt.encode(
-            payload,
-            LoginHandler.JWT_SALT,
-            algorithm='HS256'
-        )
+class SelfHandler(RequestHandlerWithBotContext):
+
+    def get_current_user(self):
+        return self.get_secure_cookie("user").decode('ascii')
+
+    def get(self):
+        user = self.bot.find_user(self.current_user)
+        if user:
+            data = extract_attributes(user, ('id', 'name', 'avatar_url'))
+            self.set_header('Content-Type', 'application/json')
+            self.write(json_encode(data))
+        else:
+            self.set_status(HTTPStatus.FORBIDDEN)

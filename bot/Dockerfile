@@ -15,8 +15,7 @@ RUN pip install \
     git+https://github.com/docker/docker-py@master \
     watchdog \
     cleverbot \
-    python-instagram-ext \
-    pyjwt
+    python-instagram-ext
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \

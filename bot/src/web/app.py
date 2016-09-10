@@ -12,6 +12,7 @@ def init_web_app(config):
 
     return WebApplication(
         port,
+        cookie_secret = config.get(c.COOKIE_SECRET_KEY)
     )
 
 class WebApplication(web.Application):

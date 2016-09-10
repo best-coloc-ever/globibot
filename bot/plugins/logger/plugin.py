@@ -18,8 +18,8 @@ class Logger(Plugin):
 
         self.add_web_handlers(
             (r'/ws/logs', LoggerWebSocketHandler, dict(module=self)),
-            (r'/logs/top', LogsApiTopHandler, dict(plugin=self)),
-            (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, dict(plugin=self)),
+            (r'/logs/top', LogsApiTopHandler, dict(plugin=self, bot=self.bot)),
+            (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, dict(plugin=self, bot=self.bot)),
         )
 
     '''

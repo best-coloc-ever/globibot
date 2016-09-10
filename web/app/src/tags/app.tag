@@ -21,12 +21,16 @@
   </div>
 
   <script>
+    import Cookies from 'js-cookie'
+
+    var self = this;
+
     this.user = null
     this.token = null
     this.currentView = null
 
     this.setView = (viewTag, loginRequired = true, opts={}) => {
-      if (loginRequired && !this.user)
+      if (loginRequired && !Cookies.get('user'))
         return riot.route('/login')
 
       if (this.currentView)
@@ -45,8 +49,18 @@
 
       riot.route.start(true)
 
-      if (!this.user)
-        riot.route('/login')
+      if (!self.user) {
+        if (Cookies.get('user'))
+          fetch('/bot/api/user', { credentials: 'same-origin' })
+            .then(r => r.json())
+            .then(data => {
+              self.user = data
+              console.log(self.user)
+              self.trigger('credential-changed')
+            })
+        else
+          riot.route('/login')
+      }
     })
   </script>
 

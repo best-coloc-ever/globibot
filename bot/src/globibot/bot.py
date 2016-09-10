@@ -34,6 +34,7 @@ class Globibot(DiscordClient):
         self.enabled_servers = self.config.get(c.ENABLED_SERVERS_KEY, [])
 
         self.web.add_handlers(r'.*$', (
+            (r'/api/user', api.SelfHandler, dict(bot=self)),
             (r'/api/login', api.LoginHandler, dict(bot=self)),
             (r'/api/register', api.RegistrationHandler, dict(bot=self)),
             (r'/api/send-registration-token/(?P<user_id>\d+)', api.RegistrationTokenHandler, dict(bot=self)),
@@ -133,6 +134,12 @@ class Globibot(DiscordClient):
             (server for server in self.servers if server.id == server_id),
             None
         )
+
+    def servers_of(self, user):
+        return [
+            server for server in self.servers
+            if user in server.members
+        ]
 
     '''
     Details
