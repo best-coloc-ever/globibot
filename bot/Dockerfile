@@ -28,6 +28,5 @@ WORKDIR /app
 CMD [ \
     "python3", "src/main.py", \
     "--plugin-path", "plugins", \
-    "--config-path", "config.yaml", \
-    "--static-root", "/web" \
+    "--config-path", "config.yaml" \
 ]
