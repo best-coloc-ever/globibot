@@ -1,1 +1,3 @@
 bot/config.yaml
+web/server/fullchain.pem
+web/server/privkey.pem
