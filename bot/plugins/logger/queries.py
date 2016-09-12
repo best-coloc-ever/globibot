@@ -45,9 +45,17 @@ find_logs = '''
 '''
 
 most_logs = '''
-    select author_id, count(*), max(stamp) from log
+    select author_id, count(distinct id), max(stamp) from log
         where       server_id = %(server_id)s
         group by    author_id
         order by    count(*) desc
         limit       %(limit)s
+'''
+
+user_content = '''
+    select          id, channel_id, server_id, content, is_deleted, stamp
+        from        log
+        where       author_id = %(author_id)s
+            and     server_id in %(server_ids)s
+        order by    stamp desc
 '''
