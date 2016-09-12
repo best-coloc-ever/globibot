@@ -1,7 +1,8 @@
+from tornado.web import MissingArgumentError
+from tornado.escape import json_encode
+
 from http import HTTPStatus
 from functools import wraps
-
-from tornado.escape import json_encode
 
 def authenticated(method):
 
@@ -25,3 +26,39 @@ def respond_json(method):
             self.write(json_encode(data))
 
     return call
+
+def with_query_parameters(*parameter_names):
+
+    def wrapped(method):
+
+        @wraps(method)
+        def call(self, *args, **kwargs):
+            try:
+                for param in parameter_names:
+                    kwargs[param] = self.get_query_argument(param)
+
+                return method(self, *args, **kwargs)
+            except MissingArgumentError:
+                self.set_status(HTTPStatus.BAD_REQUEST)
+
+        return call
+
+    return wrapped
+
+def with_body_arguments(*parameter_names):
+
+    def wrapped(method):
+
+        @wraps(method)
+        def call(self, *args, **kwargs):
+            try:
+                for param in parameter_names:
+                    kwargs[param] = self.get_body_argument(param)
+
+                return method(self, *args, **kwargs)
+            except MissingArgumentError:
+                self.set_status(HTTPStatus.BAD_REQUEST)
+
+        return call
+
+    return wrapped

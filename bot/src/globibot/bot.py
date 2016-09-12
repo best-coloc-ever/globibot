@@ -33,18 +33,7 @@ class Globibot(DiscordClient):
 
         self.enabled_servers = self.config.get(c.ENABLED_SERVERS_KEY, [])
 
-        self.web.add_handlers(r'.*$', (
-            (r'/api/user', api.SelfHandler, dict(bot=self)),
-            (r'/api/login', api.LoginHandler, dict(bot=self)),
-            (r'/api/register', api.RegistrationHandler, dict(bot=self)),
-            (r'/api/send-registration-token/(?P<user_id>\d+)', api.RegistrationTokenHandler, dict(bot=self)),
-            (r'/api/user/(?P<user_id>\d+)', api.UserHandler, dict(bot=self)),
-            (r'/api/users/(?P<server_id>\d+)', api.UsersHandler, dict(bot=self)),
-            (r'/api/find', api.FindHandler, dict(bot=self)),
-            (r'/api/server/(?P<server_id>\d+)', api.ServerHandler, dict(bot=self)),
-            (r'/api/servers', api.ServersHandler, dict(bot=self)),
-            (r'/api/plugins', api.PluginsHandler, dict(bot=self)),
-        ))
+        self.web.add_routes('bot', *api.routes(self))
 
     '''
     Events

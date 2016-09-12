@@ -9,8 +9,6 @@ from inspect import getmembers, isfunction
 from functools import partial
 from traceback import format_exc
 
-from tornado.web import URLSpec
-
 import asyncio
 import logging
 
@@ -32,8 +30,6 @@ class Plugin:
 
         self.asyncs = set()
 
-        self.web_handlers = []
-
     def do_load(self):
         self.load()
 
@@ -41,11 +37,7 @@ class Plugin:
         tasks = asyncio.gather(*self.asyncs, return_exceptions=True)
         tasks.cancel()
 
-        filtered_handlers = [
-            handler for handler in self.bot.web.handlers if
-            handler[1][0].regex not in [h.regex for h in self.web_handlers]
-        ]
-        self.bot.web.handlers = filtered_handlers
+        self.bot.web.remove_routes(self.name)
 
         self.unload()
 
@@ -126,8 +118,7 @@ class Plugin:
         asyncio.ensure_future(run())
 
     def add_web_handlers(self, *handlers):
-        self.web_handlers += [URLSpec(*handler) for handler in handlers]
-        self.bot.web.add_handlers(r'.*$', handlers)
+        self.bot.web.add_routes(self.name, *handlers)
 
     '''
     Dispatchers
@@ -200,7 +191,7 @@ class Plugin:
 
     async def _send(self, method, *args, **kwargs):
         try:
-            content = kwargs['content']
+            content = '**<__DEV BOT__>**\n{}'.format(kwargs['content'])
             kwargs['content'] = f.truncated_content(content)
         except KeyError:
             pass
