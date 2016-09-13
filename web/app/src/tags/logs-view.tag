@@ -1,28 +1,48 @@
 <logs-view>
 
   <div class="mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col">
-    <h4 align="center">Top Message count per user on <server snowflake={ serverId } if={ serverId }></server></h4>
+    <h4 align="center">Logs</h4>
 
-    <div class="mdl-grid">
-      <div class="mdl-cell mdl-cell--2-col"></div>
-      <div class="mdl-cell mdl-cell--8-col">
-        <table if={ data } class="mdl-data-table mdl-js-data-table">
-          <tr>
-            <th>#</th>
-            <th class="mdl-data-table__cell--non-numeric">User</th>
-            <th class="mdl-data-table__header--sorted-descending">Message count</th> <!-- <a onclick={ changeSort.bind(undefined, compareCount) }>Message count</a> -->
-            <!-- <th style="width:20%; color: blue"><a onclick={ changeSort.bind(undefined, compareActive) }>Last active</a></th> -->
-          </tr>
+    <div class="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
+      <div class="mdl-tabs__tab-bar">
+        <a each={ serverData, i in data }
+           href={ '#logs-server-panel-' + i }
+           class={ 'mdl-tabs__tab': true, 'is-active': (i == 0) }>
+          <server snowflake={ serverData.server_id }></server>
+        </a>
+      </div>
 
-          <tr each={ item, i in data }>
-            <td>{ i + 1 }</td>
-            <td class="mdl-data-table__cell--non-numeric"><a href={ '#logs/' + item[0][0] }>{ item[0][1] }</a></td>
-            <td>{ item[1] }</td>
-            <!-- <td><timer value={ item[2] }></timer></td> -->
-          </tr>
-        </table>
+      <div each={ serverData, i in data }
+           class={ 'mdl-tabs__panel': true, 'is-active': (i == 0) }
+           id={ 'logs-server-panel-' + i }>
+        <div class="mdl-grid">
+          <div class="mdl-cell mdl-cell--2-col"></div>
+          <div class="mdl-cell mdl-cell--8-col">
+            <table class="mdl-data-table mdl-js-data-table">
+              <tr>
+                <th>#</th>
+                <th class="mdl-data-table__cell--non-numeric">User</th>
+                <th class="mdl-data-table__header--sorted-descending">
+                  <span id={ 'count-tooltip-' + i }>Message count</span>
+                  <div class="mdl-tooltip" data-mdl-for={ 'count-tooltip-' + i }>
+                    Does not include edited messages
+                  </div>
+                </th>
+              </tr>
+
+              <tr each={ item, i in serverData.data }>
+                <td>{ i + 1 }</td>
+                <td class="mdl-data-table__cell--non-numeric">
+                  <a href={ '#logs/' + item.user.id }>{ item.user.name }</a>
+                </td>
+                <td>{ item.count }</td>
+              </tr>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
+
   </div>
 
   <style scoped>
@@ -32,26 +52,16 @@
   </style>
 
   <script>
-    var self = this
+    import API from '../api.js'
 
-    this.serverId = null
     this.data = null
 
     this.on('mount', () => {
-      componentHandler.upgradeElements(this.root)
-
-      let headers = new Headers({
-        'Authorization': 'Bearer ' + this.opts.app.token
+      API.logs().then(data => {
+        this.data = data
+        this.update()
+        componentHandler.upgradeElements(this.root)
       })
-
-      fetch('/bot/logs/top', { headers: headers, credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(data => {
-          self.serverId = data.server_id
-          self.data = data.data
-          console.log(data)
-          self.update()
-        })
     })
   </script>
 

@@ -10,5 +10,6 @@ import './tags/register-view.tag'
 
 import './tags/user.tag'
 import './tags/server.tag'
+import './tags/message.tag'
 
 riot.mount('app')

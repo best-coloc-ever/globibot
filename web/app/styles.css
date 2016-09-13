@@ -17,6 +17,13 @@
 html, body {
   font-family: 'Roboto', 'Helvetica', sans-serif;
 }
+
+.hv-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .demo-avatar {
   width: 48px;
   height: 48px;

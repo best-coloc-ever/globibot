@@ -21,15 +21,13 @@
   </div>
 
   <script>
+    import API from '../api.js'
     import Cookies from 'js-cookie'
 
-    var self = this;
-
     this.user = null
-    this.token = null
     this.currentView = null
 
-    this.setView = (viewTag, loginRequired = true, opts={}) => {
+    this.setView = (viewTag, loginRequired=true, opts={}) => {
       if (loginRequired && !Cookies.get('user'))
         return riot.route('/login')
 
@@ -42,6 +40,7 @@
 
     this.on('mount', () => {
       riot.route('/login',    ()        => { this.setView('login-view', false)    })
+      riot.route('/logout',   ()        => { this.logout() })
       riot.route('/register', ()        => { this.setView('register-view', false) })
       riot.route('/home',     ()        => { this.setView('home-view')            })
       riot.route('/logs',     ()        => { this.setView('logs-view')            })
@@ -49,19 +48,27 @@
 
       riot.route.start(true)
 
-      if (!self.user) {
+      if (!this.user) {
         if (Cookies.get('user'))
-          fetch('/bot/api/user', { credentials: 'same-origin' })
-            .then(r => r.json())
-            .then(data => {
-              self.user = data
-              console.log(self.user)
-              self.trigger('credential-changed')
-            })
+          this.fetchUserData()
         else
           riot.route('/login')
       }
     })
+
+    this.logout = () => {
+      Cookies.remove('user')
+      this.user = null
+      this.trigger('credential-changed')
+      riot.route('/login')
+    }
+
+    this.fetchUserData = () => {
+      API.currentUser().then(data => {
+        this.user = data
+        this.trigger('credential-changed')
+      })
+    }
   </script>
 
 </app>

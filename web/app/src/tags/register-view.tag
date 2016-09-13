@@ -87,12 +87,7 @@
     button {
       margin-bottom: 24px;
     }
-    .hv-center {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-  </style>
+    </style>
 
   <script>
     var self = this

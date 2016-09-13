@@ -1,6 +1,6 @@
 <server>
 
-  <span> { name } <img src={ iconUrl } if={ iconUrl }></span>
+  <span> { name } <img src={ iconUrl }></span>
 
   <style scoped>
     img {
@@ -10,22 +10,18 @@
   </style>
 
   <script>
-    var self = this;
+    import API from '../api.js'
+
     this.name = '# ' + opts.snowflake;
-    this.iconUrl = null
+    this.iconUrl = '//fakeimg.pl/300/?text=?'
 
     this.fetchServer = () => {
       if (opts.snowflake) {
-        // let headers = new Headers({
-        //   'Authorization': 'Bearer ' + this.opts.app.token
-        // })
-
-        fetch('/bot/api/server/' + opts.snowflake)
-          .then(r => r.json())
+        API.server(opts.snowflake)
           .then(data => {
-            self.name = data.name
-            self.iconUrl = data.icon_url
-            self.update()
+            this.name = data.name
+            this.iconUrl = data.icon_url
+            this.update()
           })
       }
     }

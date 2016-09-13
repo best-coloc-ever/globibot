@@ -71,6 +71,7 @@
       fetch('/bot/api/login', requestSettings)
         .then(response => {
           if (response.ok) {
+            this.app.fetchUserData()
             riot.route('/home')
           }
           else {

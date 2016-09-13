@@ -17,7 +17,7 @@
     this.fetchUser = () => {
       if (opts.snowflake) {
 
-        fetch('/bot/api/user/' + opts.snowflake)
+        fetch('/bot/api/user/' + opts.snowflake, { credentials: 'same-origin'})
           .then(r => r.json())
           .then(data => {
             self.name = data.name

@@ -191,7 +191,7 @@ class Plugin:
 
     async def _send(self, method, *args, **kwargs):
         try:
-            content = '**<__DEV BOT__>**\n{}'.format(kwargs['content'])
+            content = kwargs['content']
             kwargs['content'] = f.truncated_content(content)
         except KeyError:
             pass
