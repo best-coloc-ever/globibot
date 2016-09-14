@@ -8,7 +8,7 @@
     { data.content }
   </span>
 
-  <style scope>
+  <style scoped>
     img {
       max-width: 32px;
       max-height: 32px;

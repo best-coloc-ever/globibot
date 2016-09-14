@@ -39,6 +39,7 @@
     }
 
     this.on('mount', () => {
+      this.setView('home-view')
       riot.route('/login',    ()        => { this.setView('login-view', false)    })
       riot.route('/logout',   ()        => { this.logout() })
       riot.route('/register', ()        => { this.setView('register-view', false) })
@@ -47,6 +48,7 @@
       riot.route('/logs/*',   (userId) => { this.setView('logs-view-user', true, { userId: userId }) })
 
       riot.route.start(true)
+      console.log(riot.ruoute)
 
       if (!this.user) {
         if (Cookies.get('user'))
