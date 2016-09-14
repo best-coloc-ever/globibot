@@ -48,7 +48,7 @@ most_logs = '''
     select author_id, count(distinct id), max(stamp) from log
         where       server_id = %(server_id)s
         group by    author_id
-        order by    count(*) desc
+        order by    count(distinct id) desc
         limit       %(limit)s
 '''
 
