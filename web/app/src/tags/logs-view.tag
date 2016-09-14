@@ -33,7 +33,7 @@
               <tr each={ item, i in serverData.data }>
                 <td>{ i + 1 }</td>
                 <td class="mdl-data-table__cell--non-numeric">
-                  <a href={ '#logs/' + item.user.id }>{ item.user.name }</a>
+                  <a href={ '#logs/' + item.user.id }>{ item.user.name || '#' + item.user.id }</a>
                 </td>
                 <td>{ item.count }</td>
               </tr>

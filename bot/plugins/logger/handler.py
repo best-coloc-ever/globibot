@@ -4,13 +4,17 @@ from globibot.lib.web.decorators import authenticated, respond_json
 from . import queries as q
 
 def user_data(user_snowflake, server):
+    data = dict(id=user_snowflake)
     member = server.get_member(user_snowflake)
     if member:
-        return dict(
-            id         = user_snowflake,
-            name       = member.name,
-            avatar_url = member.avatar_url
-        )
+        data = {
+            **data,
+            **dict(
+                name       = member.name,
+                avatar_url = member.avatar_url
+            )
+        }
+    return data
 
 def channel_data(channel):
     if channel:
