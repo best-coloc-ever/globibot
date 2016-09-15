@@ -14,5 +14,7 @@ import './tags/message.tag'
 
 import './tags/day-activity-bar-chart.tag'
 import './tags/channel-activity-bar-chart.tag'
+import './tags/user-daily-activity-bar-chart.tag'
+import './tags/user-channel-activity-bar-chart.tag'
 
 riot.mount('app')

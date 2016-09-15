@@ -12,7 +12,6 @@
 
       <div class="mdl-tabs__panel is-active" id="logs-user-stats">
         <div class="mdl-grid">
-          <div class="mdl-cell mdl-cell--3-col"></div>
           <div class="mdl-cell mdl-cell--6-col">
             <table class="mdl-data-table mdl-js-data-table">
               <tr>
@@ -68,6 +67,18 @@
                 <td>{ stats.averageMessageLengthPerDay.toFixed(2) }</td>
               </tr>
             </table>
+          </div>
+          <div class="mdl-cell mdl-cell--6-col">
+            <user-daily-activity-bar-chart
+              if={ stats }
+              data={ stats.activityPerDay }
+              title="Last activity per day">
+            </user-daily-activity-bar-chart>
+            <user-channel-activity-bar-chart
+              if={ stats }
+              data={ stats.activityPerChannel }
+              title="Activity per channel in the last 24h">
+            </user-channel-activity-bar-chart>
           </div>
         </div>
       </div>
@@ -145,6 +156,9 @@
 
         this.lastMessages = data.slice(0, 200)
 
+        this.activityPerDay = new Array
+        this.activityPerChannel = new Array
+
         this.build(data)
       }
 
@@ -175,14 +189,43 @@
       }
 
       build(data) {
-        let uniqueMessages = new Set
+        let uniqueMessages = new Set,
+            activityMap = new Map,
+            channelActivityMap = new Map,
+            nowStamp = new Date().getTime() / 1000,
+            channelMap = new Map,
+            newPeriodActivity = () => new Object({ action: 0, unique: 0, deleted: 0 })
+
+        let nextDay = new Date
+        nextDay.setUTCHours(0, 0, 0, 0)
+        let nextDayStamp = nextDay.setDate(nextDay.getDate() + 1) / 1000
 
         data.forEach(message => {
+          let daysFrom = Math.round((nextDayStamp - message.stamp) / (24 * 3600)),
+              activity = activityMap.get(daysFrom),
+              channelId = (message.channel ? message.channel.id : undefined),
+              channelActivity = channelActivityMap.get(channelId),
+              h24FromNow = (nowStamp - message.stamp < 24 * 3600)
+
+          if (!activity) {
+            activityMap.set(daysFrom, newPeriodActivity())
+            activity = activityMap.get(daysFrom)
+          }
+          if (!channelActivity) {
+            channelActivityMap.set(channelId, newPeriodActivity())
+            channelActivity = channelActivityMap.get(channelId)
+          }
+
+          channelMap.set(channelId, [message.server, message.channel])
           // Count actions and messages
           this.rawActionCount += 1
+          activity.action += 1
+          if (h24FromNow) channelActivity.action += 1
 
           if (!(uniqueMessages.has(message.id))) {
             this.uniqueMessageCount += 1
+            activity.unique += 1
+            if (h24FromNow) channelActivity.unique += 1
             uniqueMessages.add(message.id)
           }
           else {
@@ -193,6 +236,8 @@
           if (message.is_deleted) {
             this.deletedMessageCount += 1
             this.rawActionCount += 1
+            activity.deleted += 1
+            if (h24FromNow) channelActivity.deleted += 1
           }
 
           this.characterCount += message.content.length
@@ -213,15 +258,35 @@
               this.wordMap.set(word, count + 1)
           })
 
-
         })
 
+        // transform the wordMap back to an array (riotjs doesn't handle map iteration yet)
         this.wordMap.forEach((value, key) => {
           this.words.push([key, value])
         })
 
         this.words.sort((a, b) => b[1] - a[1])
         this.words.splice(200)
+
+        // Build the activity per day dataset
+        for (let i = 0; i < 10; ++i) {
+          let activity = activityMap.get(i) || newPeriodActivity()
+          this.activityPerDay.unshift(activity)
+        }
+
+        // Build the activity per channel dataset
+        console.log(channelActivityMap)
+        channelActivityMap.forEach((value, key) => {
+          if (key && value.action > 0) {
+            let [server, channel] = channelMap.get(key)
+            this.activityPerChannel.push({
+              server: server,
+              channel: channel,
+              activity: channelActivityMap.get(key)
+            })
+          }
+        })
+
       }
 
     }
