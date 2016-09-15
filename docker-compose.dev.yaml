@@ -1,0 +1,28 @@
+version: '2'
+
+volumes:
+  # Stores all the node packages
+  node-modules: {}
+
+services:
+
+  db:
+    volumes:
+      # migration system
+      - './db/migrate:/flyway/sql'
+      - './db/flyway.conf:/flyway/conf/flyway.conf'
+
+  web:
+    ports:
+      - '8443:443'
+
+  web-builder:
+    build: ./web/builder
+    volumes:
+      # Web sources
+      - './web/app:/app'
+      # Node specific
+      - 'node-modules:/app/node_modules'
+    ports:
+      # Exposing port for browser-sync
+      - '3000:3000'

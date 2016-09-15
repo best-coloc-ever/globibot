@@ -33,11 +33,7 @@ class Globibot(DiscordClient):
 
         self.enabled_servers = self.config.get(c.ENABLED_SERVERS_KEY, [])
 
-        self.web.add_handlers(r'.*$', (
-            (r'/api/user/(?P<user_id>\d+)', api.UserHandler, dict(bot=self)),
-            (r'/api/users/(?P<server_id>\d+)', api.UsersHandler, dict(bot=self)),
-            (r'/api/servers', api.ServersHandler, dict(bot=self)),
-        ))
+        self.web.add_routes('bot', *api.routes(self))
 
     '''
     Events
@@ -116,11 +112,23 @@ class Globibot(DiscordClient):
                 if user.id == user_id:
                     return user
 
+    def find_user_by_name(self, user_name):
+        for server in self.servers:
+            for user in server.members:
+                if user.name.lower() == user_name.lower():
+                    return user
+
     def find_server(self, server_id):
         return next(
             (server for server in self.servers if server.id == server_id),
             None
         )
+
+    def servers_of(self, user):
+        return [
+            server for server in self.servers
+            if user in server.members
+        ]
 
     '''
     Details

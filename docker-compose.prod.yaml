@@ -1,0 +1,7 @@
+version: '2'
+
+services:
+
+  web:
+    ports:
+      - '443:443'

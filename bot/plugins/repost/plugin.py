@@ -36,24 +36,10 @@ class Repost(Plugin):
         await self.process_message(after)
 
     async def process_message(self, message):
-        warned = False
         for url in URL_PATTERN.findall(message.content):
             try:
                 author_id, stamp = self.links[message.server.id][url]
                 self.shames[message.server.id][message.author.id].append((url, time()))
-                if not warned:
-                    await self.send_message(
-                        message.channel,
-                        '🔔 {} you posted a link originally posted by {} ({} UTC) 🔔\nPlease visit {} for more information'
-                            .format(
-                                message.author.mention,
-                                f.mention(author_id),
-                                datetime.fromtimestamp(stamp).strftime('%Y-%m-%d %H:%M:%S'),
-                                'https://globibot.com/repost?id={}'.format(message.server.id)
-                            ),
-                        delete_after = 10
-                    )
-                    warned = True
             except KeyError:
                 self.links[message.server.id][url] = (message.author.id, time())
 

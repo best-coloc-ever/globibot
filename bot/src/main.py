@@ -10,10 +10,7 @@ def main():
     args = parse_args()
     bot_config, web_config, db_config = load_config(args.config_path)
 
-    web_app = init_web_app(
-        web_config,
-        args.static_root
-    )
+    web_app = init_web_app(web_config)
 
     globibot = Globibot(
         bot_config,
