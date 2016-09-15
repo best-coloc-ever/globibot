@@ -12,4 +12,7 @@ import './tags/user.tag'
 import './tags/server.tag'
 import './tags/message.tag'
 
+import './tags/day-activity-bar-chart.tag'
+import './tags/channel-activity-bar-chart.tag'
+
 riot.mount('app')

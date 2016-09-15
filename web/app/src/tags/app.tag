@@ -48,7 +48,6 @@
       riot.route('/logs/*',   (userId) => { this.setView('logs-view-user', true, { userId: userId }) })
 
       riot.route.start(true)
-      console.log(riot.ruoute)
 
       if (!this.user) {
         if (Cookies.get('user'))

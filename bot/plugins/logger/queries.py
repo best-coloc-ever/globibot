@@ -59,3 +59,25 @@ user_content = '''
             and     server_id in %(server_ids)s
         order by    stamp desc
 '''
+
+server_activity_per_day = '''
+    select          count(*), count(distinct id),
+                    count(case is_deleted when 't' then 1 else null end),
+                    date_trunc('day', stamp) as stamp
+        from        log
+        where       extract('epoch' from stamp) > %(start)s
+            and     server_id = %(server_id)s
+        group by    date_trunc('day', stamp)
+        order by    stamp
+'''
+
+server_activity_per_channel = '''
+    select          count(*), count(distinct id),
+                    count(case is_deleted when 't' then 1 else null end),
+                    channel_id
+        from        log
+        where       extract('epoch' from stamp) > %(start)s
+            and     server_id = %(server_id)s
+        group by    channel_id
+        order by    count(*)
+'''
