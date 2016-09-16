@@ -3,6 +3,7 @@ from globibot.lib.web.decorators import authenticated, respond_json
 
 from . import queries as q
 
+from datetime import datetime
 from time import time
 
 def user_data(user_snowflake, server):
@@ -82,9 +83,14 @@ class LogsApiTopHandler(SessionHandler):
             ))
 
             activity = []
+            next_day = datetime.now()
+            next_day.replace(
+                hour=0, minute=0, second=0, microsecond=0,
+                day=next_day.day + 1
+            )
 
             for action_count, unique_message_count, deleted_count, start in trans.fetchall():
-                days_from = int((time() - start.timestamp()) / (24 * 3600))
+                days_from = int((next_day.timestamp() - start.timestamp()) / (24 * 3600))
 
                 while len(activity) < LogsApiTopHandler.ACTIVITY_DAY_COUNT - days_from:
                     activity.append(activity_data(0, 0, 0))
