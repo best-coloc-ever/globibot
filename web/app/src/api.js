@@ -3,9 +3,13 @@ const credentials = { credentials: 'same-origin' }
 class API {
 
   static currentUser()       { return API.jsonCall('/api/user')                }
-  static server(snowflake)   { return API.jsonCall('/api/server/' + snowflake) }
+  static server(snowflake)   { return API.jsonCall(`/api/server/${snowflake}`) }
   static logs()              { return API.jsonCall('/logs/top')                }
-  static userLogs(snowflake) { return API.jsonCall('/logs/user/' + snowflake)  }
+  static userLogs(snowflake) { return API.jsonCall(`/logs/user/${snowflake}`)  }
+
+  static logsWebSocket() {
+    return new WebSocket(`wss://${document.domain}:8443/ws/logs`)
+  }
 
   static jsonCall(route) {
     let promise =

@@ -26,6 +26,7 @@
 
     this.user = null
     this.currentView = null
+    this.logsWS = null
 
     this.setView = (viewTag, loginRequired=true, opts={}) => {
       if (loginRequired && !Cookies.get('user'))
@@ -50,8 +51,17 @@
       riot.route.start(true)
 
       if (!this.user) {
-        if (Cookies.get('user'))
+        if (Cookies.get('user')) {
           this.fetchUserData()
+
+          let ws = API.logsWebSocket()
+          ws.onopen    = e => { this.trigger('on-logs-ws-open')            }
+          ws.onmessage = e => { this.trigger('on-logs-ws-message', JSON.parse(e.data)) }
+          ws.onclose   = e => { this.trigger('on-logs-ws-closed')          }
+          ws.onerror   = e => { this.trigger('on-logs-ws-error')           }
+          setInterval(() => { ws.send('PING') }, 50 * 1000)
+          this.logsWS = ws
+        }
         else
           riot.route('/login')
       }
@@ -70,6 +80,7 @@
         this.trigger('credential-changed')
       })
     }
+
   </script>
 
 </app>

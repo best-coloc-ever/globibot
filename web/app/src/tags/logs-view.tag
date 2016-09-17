@@ -54,7 +54,8 @@
               </channel-activity-bar-chart>
             </div>
             <table class="mdl-data-table mdl-js-data-table"
-                   show={ dataShown(i) == 'users' }>
+                   show={ dataShown(i) == 'users' }
+                   name="userTable">
               <tr>
                 <th>#</th>
                 <th class="mdl-data-table__cell--non-numeric">User</th>
@@ -114,6 +115,46 @@
         this.data = data
         this.update()
         componentHandler.upgradeElements(this.root)
+      })
+
+      opts.app.on('on-logs-ws-message', data => {
+        for (let i = 0; i < this.data.length; ++i) {
+          if (this.data[i].server_id == data.server.id) {
+
+            // Day activity
+            this.data[i].activity_per_day[0].action += 1
+            if (data.message.type == 'original')
+              this.data[i].activity_per_day[0].unique += 1
+            else if (data.message.type == 'deleted')
+              this.data[i].activity_per_day[0].deleted += 1
+
+            // Channel activity
+            for (let j = 0; j < this.data[i].activity_per_channel.length; ++j) {
+              if (this.data[i].activity_per_channel[j].channel.id == data.channel.id) {
+                this.data[i].activity_per_channel[j].action += 1
+                if (data.message.type == 'original')
+                  this.data[i].activity_per_channel[j].unique += 1
+                else if (data.message.type == 'deleted')
+                  this.data[i].activity_per_channel[j].deleted += 1
+                break
+              }
+            }
+
+            // user data
+            if (data.message.type == 'original') {
+              for (let j = 0; j < this.data[i].data.length; ++j) {
+                if (this.data[i].data[j].user.id == data.author.id) {
+                  console.log('user updated')
+                  this.data[i].data[j].count += 1
+                  break
+                }
+              }
+            }
+
+            break
+          }
+        }
+        this.update()
       })
     })
   </script>

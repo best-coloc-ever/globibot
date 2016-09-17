@@ -8,6 +8,8 @@
   </style>
 
   <script>
+    this.barChart = null
+
     this.on('mount', () => {
       setTimeout(this.buildChart, 0) // Dom readyness...
     })
@@ -17,7 +19,9 @@
 
       let labels = data.map(d => d.channel.name)
 
-      new Chart(this.chart, {
+      if (this.barChart)
+        this.barChart.destroy()
+      this.barChart = new Chart(this.chart, {
         type: 'bar',
         data: {
           labels: labels,

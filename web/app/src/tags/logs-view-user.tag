@@ -188,6 +188,77 @@
         return (new Date().getTime() - this.firstMessageStamp) / DAYS
       }
 
+      addMessage(data) {
+        this.rawActionCount += 1
+
+        let lastActivityIndex = this.activityPerDay.length - 1
+        this.activityPerDay[lastActivityIndex].action += 1
+        if (data.message.type == 'original') {
+          this.uniqueMessageCount += 1
+          this.activityPerDay[lastActivityIndex].unique += 1
+        }
+        else if (data.message.type == 'edit')
+          this.editedMessageCount += 1
+        else if (data.message.type == 'deleted') {
+          this.deletedMessageCount += 1
+          this.activityPerDay[lastActivityIndex].deleted += 1
+        }
+
+        this.characterCount += data.message.content.length
+
+        let words = data.message.content.split(' ')
+        words.forEach(word => {
+          if (!word)
+            return
+
+          this.wordCount += 1
+
+          word = word.toLowerCase()
+          let count = this.wordMap.get(word)
+          if (count == undefined)
+            this.wordMap.set(word, 1)
+          else
+            this.wordMap.set(word, count + 1)
+        })
+
+        this.words = new Array
+        this.wordMap.forEach((value, key) => {
+          this.words.push([key, value])
+        })
+
+        this.words.sort((a, b) => b[1] - a[1])
+        this.words.splice(200)
+
+        this.lastMessageStamp = new Date().getTime()
+        this.lastMessages.push(data.message.content)
+
+        let found = false
+        for (let i = 0; i < this.activityPerChannel.length; ++i) {
+          if (this.activityPerChannel[i].channel.id == data.channel.id) {
+            this.activityPerChannel[i].activity.action += 1
+            if (data.message.type == 'original')
+              this.activityPerChannel[i].activity.unique += 1
+            else if (data.message.type == 'deleted')
+              this.activityPerChannel[i].activity.deleted += 1
+            found = true
+            break
+          }
+        }
+
+        if (!found) {
+          let activity = { action: 1, unique: 0, deleted: 0 }
+          if (data.message.type == 'original')
+            activity.unique += 1
+          else if (data.message.type == 'deleted')
+            activity.deleted += 1
+          this.activityPerChannel.push({
+            server: data.server,
+            channel: data.channel,
+            activity: activity
+          })
+        }
+      }
+
       build(data) {
         let uniqueMessages = new Set,
             activityMap = new Map,
@@ -275,14 +346,13 @@
         }
 
         // Build the activity per channel dataset
-        console.log(channelActivityMap)
         channelActivityMap.forEach((value, key) => {
           if (key && value.action > 0) {
             let [server, channel] = channelMap.get(key)
             this.activityPerChannel.push({
               server: server,
               channel: channel,
-              activity: channelActivityMap.get(key)
+              activity: value
             })
           }
         })
@@ -297,6 +367,16 @@
       API.userLogs(this.userId).then(data => {
         this.stats = new Stats(data)
         this.update()
+      })
+
+      opts.app.on('on-logs-ws-message', data => {
+        if (data.author.id == this.userId)
+        this.stats.addMessage(data)
+        this.update()
+        this.tags['user-daily-activity-bar-chart'].update({ data: this.stats.activityPerDay })
+        this.tags['user-daily-activity-bar-chart'].buildChart()
+        this.tags['user-channel-activity-bar-chart'].update({ data: this.stats.activityPerChannel })
+        this.tags['user-channel-activity-bar-chart'].buildChart()
       })
 
     })

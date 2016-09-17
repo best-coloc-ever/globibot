@@ -5,6 +5,7 @@ from globibot.lib.helpers import formatting as f
 from globibot.lib.helpers.hooks import master_only
 
 from itertools import groupby
+from collections import defaultdict
 
 from .ws_handler import LoggerWebSocketHandler
 from . import queries as q
@@ -14,10 +15,10 @@ from .handler import LogsApiTopHandler, LogsApiUserHandler
 class Logger(Plugin):
 
     def load(self):
-        self.ws_consumers = dict()
+        self.ws_consumers = defaultdict(set)
 
         self.add_web_handlers(
-            (r'/ws/logs', LoggerWebSocketHandler, dict(module=self)),
+            (r'/ws/logs', LoggerWebSocketHandler, dict(plugin=self)),
             (r'/logs/top', LogsApiTopHandler, dict(plugin=self, bot=self.bot)),
             (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, dict(plugin=self, bot=self.bot)),
         )
@@ -203,5 +204,5 @@ class Logger(Plugin):
             message  = message_
         )
 
-        for consumer in self.ws_consumers:
+        for consumer in self.ws_consumers[message.server.id]:
             consumer.write_message(data)
