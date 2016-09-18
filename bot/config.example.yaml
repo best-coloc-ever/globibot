@@ -1,23 +1,10 @@
 bot:
   token: 'Your bot token'
   plugins:
-    # foo:    {}
-    logger: {}
-    meta:   {}
-    eval:   {}
-    utils:  {}
-    stats:  {}
     chat:   {}
-    twitch:
-      client_id: 'your twitch client id'
-    twitter:
-      consumer_key: 'your consumer key'
-      consumer_secret: 'your consumer secret'
-      access_token: 'your access token'
-      access_token_secret: 'your access token secret'
-    instagram:
-      access_token: 'your access token'
-      client_secret: 'your client secret'
+    eval:   {}
+    # foo:    {}
+    giveaways: {}
     help:
       enabled:
         - logger
@@ -26,6 +13,21 @@ bot:
         - twitter
         - twitch
         - help
+    instagram:
+      access_token: 'your access token'
+      client_secret: 'your client secret'
+    logger: {}
+    meta:   {}
+    repost: {}
+    stats:  {}
+    twitch:
+      client_id: 'your twitch client id'
+    twitter:
+      consumer_key: 'your consumer key'
+      consumer_secret: 'your consumer secret'
+      access_token: 'your access token'
+      access_token_secret: 'your access token secret'
+    utils:  {}
   servers:
     - 'Some server name'
     - 'TestBot'
