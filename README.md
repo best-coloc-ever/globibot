@@ -2,8 +2,7 @@
 A plugin-based, extensible bot for [Discord](https://discordapp.com)
 
 ## Configuration
-The bot configuration is read from a `config.yaml` file placed in the [bot](./bot) directory that you must create yourself
-
+The bot configuration is read from a `yaml` file (specified with `--config-path`)  
 You can copy the existing [`config.example.yaml`](./bot/config.example.yaml) file and fill in the values yourself
 
 You must at least provide a valid `token` for your bot under the top level `bot` configuration key  
@@ -40,24 +39,27 @@ db:
 ## Deployment :whale:
 If you want to use the webserver:
 
-Place/generate your SSL/TLS certificate in `./web/fullchain.pem`  
-Place the associated private key in `./web/privkey.pem`
+Place/generate your SSL/TLS certificate in `./web/server/fullchain.pem`  
+Place the associated private key in `./web/server/privkey.pem`
 
 Then make sure `docker >= 1.10` and `docker-compose >= 1.6` are installed and run:
 
 ```sh
-docker-compose up -d db # Boots up the db
-docker-compose run --rm db flyway migrate # Populate the db
+./dev run --rm web-builder npm install # Fetch node dependencies
+./dev run --rm web-builder webpack -p # Bundle the website
 
-docker-compose up -d # Boots up the bot and the webserver
+./prod up -d db # Boots up the db
+./dev run --rm db flyway migrate # Populate the db
 
-docker-compose logs -f bot # To access the bot's stdout logs
+./prod up -d # Boots up the bot and the webserver
+
+./prod logs -f bot # To access the bot's stdout logs
 ```
 
 ## Using plugins
 Globibot comes with a minimalistic set of plugins
 
-Plugins are python modules located in [`./bot/src/bot/plugins/`](./bot/src/bot/plugins/)`<plugin_name>/`
+Plugins are python modules loaded from the directory specified by `--plugin-path`
 
 To enable a plugin, you can just add its name in the configuration file under the `plugins` key
 
@@ -66,14 +68,14 @@ For globibot to be able to load a plugin, your plugin module must export a symbo
 
 Let's create a simple plugin called `foo`
 
-In `./bot/src/bot/plugins/foo/__init__.py`:
+In `./bot/plugins/foo/__init__.py`:
 ```python
 from .foo_plugin import Foo
 
 plugin_cls = Foo
 ```
 
-In `./bot/src/bot/plugins/foo/foo_plugin.py`:
+In `./bot/plugins/foo/foo_plugin.py`:
 ```python
 from bot.lib.plugin import Plugin
 
@@ -110,12 +112,12 @@ Let's add a simple command to the plugin:
 
 In `./bot/src/bot/plugins/foo/foo_plugin.py`:
 ```python
-from bot.lib.plugin import Plugin
+from globibot.lib.plugin import Plugin
 
-from bot.lib.decorators import command # Command declaration helper
+from globibot.lib.decorators import command # Command declaration helper
 
-from bot.lib.helpers import parsing as p # Parser combinator tools
-from bot.lib.helpers.hooks import master_only # Hook to only allow master users
+from globibot.lib.helpers import parsing as p # Parser combinator tools
+from globibot.lib.helpers.hooks import master_only # Hook to only allow master users
 
 class Foo(Plugin):
 
