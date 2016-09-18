@@ -29,8 +29,7 @@ bot:
       access_token_secret: 'your access token secret'
     utils:  {}
   servers:
-    - 'Some server name'
-    - 'TestBot'
+    - 'Some server snowflake'
   masters:
     - 'A valid discord user's snowflake id'
 
