@@ -4,6 +4,14 @@
     <h4 align="center">Logs</h4>
 
     <div class="mdl-tabs mdl-js-tabs mdl-js-ripple-effect">
+      <div class="mdl-grid" name="spinner" if={ !data }>
+        <div class="mdl-cell mdl-cell--3-col"></div>
+        <div class="mdl-cell mdl-cell--6-col">
+          <div class="mdl-progress mdl-js-progress mdl-progress__indeterminate">
+          </div>
+        </div>
+      </div>
+
       <div class="mdl-tabs__tab-bar">
         <a each={ serverData, i in data }
            href={ '#logs-server-panel-' + i }
@@ -111,6 +119,8 @@
     }
 
     this.on('mount', () => {
+      componentHandler.upgradeElements(this['spinner'])
+
       API.logs().then(data => {
         this.data = data
         this.update()
