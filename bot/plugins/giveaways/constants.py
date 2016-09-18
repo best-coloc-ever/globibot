@@ -1,0 +1,1 @@
+MAX_GIVEAWAY_TIME = 120 # seconds

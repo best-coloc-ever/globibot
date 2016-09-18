@@ -40,13 +40,14 @@
     }
 
     this.on('mount', () => {
-      this.setView('home-view')
+      riot.route('/',         ()        => { this.setView('home-view')            })
       riot.route('/login',    ()        => { this.setView('login-view', false)    })
       riot.route('/logout',   ()        => { this.logout() })
       riot.route('/register', ()        => { this.setView('register-view', false) })
       riot.route('/home',     ()        => { this.setView('home-view')            })
       riot.route('/logs',     ()        => { this.setView('logs-view')            })
-      riot.route('/logs/*',   (userId) => { this.setView('logs-view-user', true, { userId: userId }) })
+      riot.route('/logs/*',   (userId)  => { this.setView('logs-view-user', true, { userId: userId }) })
+      riot.route('/giveaways',()        => { this.setView('giveaways') })
 
       riot.route.start(true)
 

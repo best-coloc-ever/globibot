@@ -38,6 +38,10 @@
       </div>
     </a>
 
+    <a class="mdl-navigation__link" href="#giveaways">
+      <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">card_giftcard</i>Giveaways
+    </a>
+
   </nav>
 
   <style scoped>
