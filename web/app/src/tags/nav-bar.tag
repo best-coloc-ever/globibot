@@ -42,6 +42,10 @@
       <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">card_giftcard</i>Giveaways
     </a>
 
+    <a class="mdl-navigation__link" href="#dj">
+      <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">queue_music</i>Dj
+    </a>
+
   </nav>
 
   <style scoped>
