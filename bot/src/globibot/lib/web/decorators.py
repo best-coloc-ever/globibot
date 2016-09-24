@@ -27,6 +27,21 @@ def respond_json(method):
 
     return call
 
+def respond_json_async(method):
+
+    @wraps(method)
+    async def call(self, *args, **kwargs):
+        future = method(self, *args, **kwargs)
+
+        if future:
+            data = await future
+
+            if data:
+                self.set_header('Content-Type', 'application/json')
+                self.write(json_encode(data))
+
+    return call
+
 def with_query_parameters(*parameter_names):
 
     def wrapped(method):

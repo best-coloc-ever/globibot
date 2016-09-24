@@ -48,6 +48,8 @@
       riot.route('/logs',     ()        => { this.setView('logs-view')            })
       riot.route('/logs/*',   (userId)  => { this.setView('logs-view-user', true, { userId: userId }) })
       riot.route('/giveaways',()        => { this.setView('giveaways') })
+      riot.route('/dj-admin', ()        => { this.setView('dj-admin-view') })
+      riot.route('/dj',       ()        => { this.setView('dj-view') })
 
       riot.route.start(true)
 

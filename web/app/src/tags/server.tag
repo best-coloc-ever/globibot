@@ -26,7 +26,14 @@
       }
     }
 
-    this.on('mount', this.fetchServer)
+    this.on('mount', () => {
+      if (opts.name && opts.iconUrl) {
+        this.name = opts.name
+        this.iconUrl = opts.iconUrl
+      }
+      else
+        this.fetchServer()
+    })
   </script>
 
 </server>

@@ -18,8 +18,49 @@ class API {
     return API.jsonCall('/giveaways/start', { body: form, method: 'POST' })
   }
 
+  static voiceInfo() {
+    return API.jsonCall('/voice')
+  }
+
+  static voiceAction(data) {
+    let form = new FormData
+
+    for (var key in data)
+      form.append(key, data[key])
+
+    return API.jsonCall('/voice', { body: form, method: 'POST' })
+  }
+
+  static joinVoice(serverId, channelId) {
+    return API.voiceAction({
+      action_type: 'join',
+      channel_id: channelId,
+      server_id: serverId
+    })
+  }
+
+  static tts(serverId, content) {
+    return API.voiceAction({
+      action_type: 'tts',
+      server_id: serverId,
+      content: content
+    })
+  }
+
+  static queueSong(serverId, song) {
+    return API.voiceAction({
+      action_type: 'queue',
+      server_id: serverId,
+      song: song
+    })
+  }
+
   static logsWebSocket() {
-    return new WebSocket(`wss://${document.domain}/ws/logs`)
+    return new WebSocket(`wss://${document.domain}:8443/ws/logs`)
+  }
+
+  static voiceWebSocket() {
+    return new WebSocket(`wss://${document.domain}/ws/voice`)
   }
 
   static jsonCall(route, extra={}) {

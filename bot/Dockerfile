@@ -21,6 +21,8 @@ RUN apt-get update -y && apt-get install -y \
     libopus-dev \
     libav-tools
 
+RUN pip install gtts
+
 ADD . /app
 WORKDIR /app
 
