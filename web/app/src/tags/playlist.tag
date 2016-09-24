@@ -2,6 +2,11 @@
 
   <h5 align="center" if={ queue.length == 0 }>Nothing is being played at the moment</h5>
 
+  <div class="mdl-snackbar mdl-js-snackbar" name="snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" show={ false }></button>
+  </div>
+
   <ul class="mdl-list">
     <li each={ item in queue } class="mdl-list__item list-item">
       <span class="mdl-list__item-primary-content">
@@ -65,7 +70,13 @@
     }
 
     this.onError = data => {
-      console.error(data)
+      // console.error(data)
+      let snackbar = this['snackbar']
+      let snackData = {
+        message: `while queuing ${data.resource}: ${data.error}`,
+        timeout: 5000
+      }
+      snackbar.MaterialSnackbar.showSnackbar(snackData)
     }
 
     this.actions = {
