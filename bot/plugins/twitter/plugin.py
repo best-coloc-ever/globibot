@@ -131,7 +131,7 @@ class Twitter(Plugin):
         if user_id not in self.monitored:
             return
 
-        del self.monitored[user_id]
+        self.monitored.discard(user_id)
 
         with self.transaction() as trans:
             trans.execute(q.remove_monitored, dict(
