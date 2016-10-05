@@ -22,6 +22,7 @@ RUN apt-get update -y && apt-get install -y \
     libav-tools
 
 RUN pip install gtts
+RUN pip install humanize
 
 ADD . /app
 WORKDIR /app

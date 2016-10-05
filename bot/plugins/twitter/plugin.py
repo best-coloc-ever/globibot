@@ -12,8 +12,9 @@ from . import errors as e
 from twitter import Twitter as TwitterAPI
 from twitter import OAuth
 
+from humanize import naturaltime
+from datetime import datetime
 from collections import namedtuple
-from time import strptime
 
 import asyncio
 
@@ -22,16 +23,26 @@ MonitoredChannel = namedtuple(
     ['id', 'user_id', 'server_id']
 )
 
+tweet_time = lambda tweet: datetime.strptime(
+    tweet['created_at'],
+    '%a %b %d %H:%M:%S +0000 %Y'
+)
+
 def format_tweet(tweet):
+    time_difference = datetime.now() - tweet_time(tweet)
+
     text = (
-        'Last tweet from `@{screen_name}`:\n\n'
+        'Last tweet from `@{screen_name}` ({ago}):\n\n'
         '{text}\n'
-        '🔄 **{retweets}**    ❤ **{favourites}**'
+        '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
+        '**__source__: {tweet_link}**'
     ).format(
         screen_name = tweet['user']['screen_name'],
         text        = f.code_block(tweet['text']),
         retweets    = tweet['retweet_count'],
-        favourites  = tweet['favorite_count']
+        favourites  = tweet['favorite_count'],
+        ago         = naturaltime(time_difference),
+        tweet_link  = 'https://twitter.com/statuses/{}'.format(tweet['id'])
     )
 
     try:
@@ -45,8 +56,6 @@ def format_tweet(tweet):
         pass
 
     return text
-
-tweet_time = lambda tweet: strptime(tweet['created_at'],'%a %b %d %H:%M:%S +0000 %Y')
 
 class Twitter(Plugin):
 
@@ -217,8 +226,8 @@ class Twitter(Plugin):
         self.debug('No longer monitoring {}'.format(user_id))
 
     async def update_tweet(self, tweet, message):
-        for i in range(24):
-            await asyncio.sleep(5)
+        for i in range(12):
+            await asyncio.sleep(10)
             try:
                 tweet = self.client.statuses.show(id=tweet['id'])
                 await self.edit_message(message, format_tweet(tweet))
