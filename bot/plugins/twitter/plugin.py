@@ -26,7 +26,7 @@ def format_tweet(tweet):
     text = (
         'Last tweet from `@{screen_name}`:\n\n'
         '{text}\n'
-        '**{retweets}** 🔄   **{favourites}** 👍'
+        '🔄 **{retweets}**    ❤ **{favourites}**'
     ).format(
         screen_name = tweet['user']['screen_name'],
         text        = f.code_block(tweet['text']),
