@@ -61,11 +61,11 @@ class API {
   }
 
   static logsWebSocket() {
-    return new WebSocket(`wss://${document.domain}:8443/ws/logs`)
+    return new WebSocket(`wss://${document.domain}/ws/logs`)
   }
 
   static voiceWebSocket() {
-    return new WebSocket(`wss://${document.domain}:8443/ws/voice`)
+    return new WebSocket(`wss://${document.domain}/ws/voice`)
   }
 
   static jsonCall(route, extra={}) {

@@ -46,6 +46,10 @@
       <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">queue_music</i>Dj
     </a>
 
+    <a class="mdl-navigation__link" href="#connections">
+      <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">link</i>Connections
+    </a>
+
   </nav>
 
   <style scoped>

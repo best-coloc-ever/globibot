@@ -286,8 +286,7 @@ class Twitter(Plugin):
                 self.error(e)
                 pass
 
-    # AUTHORIZE_CALLBACK = 'https://globibot.com/twitter/authorize'
-    AUTHORIZE_CALLBACK = 'https://vm:3000/bot/twitter/authorize'
+    AUTHORIZE_CALLBACK = 'https://globibot.com/bot/twitter/authorize'
     def request_token(self, user):
         tweaked_twitter_client = TwitterAPI(
             auth        = self.oauth,
