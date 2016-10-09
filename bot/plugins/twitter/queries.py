@@ -13,3 +13,19 @@ remove_monitored = '''
         where   user_id = %(user_id)s
             and server_id = %(server_id)s
 '''
+
+add_user = '''
+    insert into twitter_oauth (id, access_token, token_secret)
+    values                    (%(id)s, %(token)s, %(secret)s)
+'''
+
+get_user = '''
+    select      access_token, token_secret
+        from    twitter_oauth
+        where   id = %(id)s
+'''
+
+delete_user = '''
+    delete from twitter_oauth
+        where   id = %(id)s
+'''

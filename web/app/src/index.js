@@ -8,6 +8,7 @@ import './tags/logs-view-user.tag'
 import './tags/giveaways.tag'
 import './tags/dj-admin-view.tag'
 import './tags/dj-view.tag'
+import './tags/connections-view.tag'
 import './tags/login-view.tag'
 import './tags/register-view.tag'
 

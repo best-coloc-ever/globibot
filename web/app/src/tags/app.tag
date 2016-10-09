@@ -50,6 +50,7 @@
       riot.route('/giveaways',()        => { this.setView('giveaways') })
       riot.route('/dj-admin', ()        => { this.setView('dj-admin-view') })
       riot.route('/dj',       ()        => { this.setView('dj-view') })
+      riot.route('/connections', ()        => { this.setView('connections-view') })
 
       riot.route.start(true)
 

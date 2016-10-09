@@ -1,4 +1,5 @@
- var webpack = require('webpack')
+var webpack = require('webpack')
+var CopyWebpackPlugin = require('copy-webpack-plugin')
 
 module.exports = {
   entry: {
@@ -31,5 +32,8 @@ module.exports = {
       /* chunkName= */'vendor',
       /* filename= */'vendor.bundle.js'
     ),
+    new CopyWebpackPlugin([
+      { from: 'img', to: 'img' }
+    ])
   ]
 };

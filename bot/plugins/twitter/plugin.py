@@ -8,6 +8,8 @@ from globibot.lib.helpers.hooks import master_only
 from . import constants as c
 from . import queries as q
 from . import errors as e
+from .handlers import OAuthTokenHandler, OAuthAuthorizeHandler, \
+                      TwitterStatusHandler, TwitterDisconnectHandler
 
 from twitter import Twitter as TwitterAPI
 from twitter import OAuth
@@ -23,6 +25,11 @@ MonitoredChannel = namedtuple(
     ['id', 'user_id', 'server_id']
 )
 
+OAuthUser = namedtuple(
+    'OAuthUser',
+    ['token', 'secret']
+)
+
 tweet_time = lambda tweet: datetime.strptime(
     tweet['created_at'],
     '%a %b %d %H:%M:%S +0000 %Y'
@@ -35,7 +42,8 @@ def format_tweet(tweet):
         'Last tweet from `@{screen_name}` ({ago}):\n\n'
         '{text}\n'
         '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
-        '**__source__: {tweet_link}**'
+        '**__source__: {tweet_link}**\n\n'
+        '*You can use `!like` to like the tweet or `!rt` to retweet it*'
     ).format(
         screen_name = tweet['user']['screen_name'],
         text        = f.code_block(tweet['text']),
@@ -69,8 +77,20 @@ class Twitter(Plugin):
 
         self.client = TwitterAPI(auth=self.oauth)
 
+        context = dict(plugin=self, bot=self.bot)
+        self.add_web_handlers(
+            (r'/twitter/oauth_token', OAuthTokenHandler, context),
+            (r'/twitter/authorize', OAuthAuthorizeHandler, context),
+            (r'/twitter/status', TwitterStatusHandler, context),
+            (r'/twitter/disconnect', TwitterDisconnectHandler, context),
+        )
+
         self.monitored = set()
         self.restore_monitored()
+
+        self.request_tokens = dict()
+        self.last_tweets = dict()
+
 
     def unload(self):
         self.monitored.clear()
@@ -94,8 +114,9 @@ class Twitter(Plugin):
             m = await self.send_message(
                 message.channel,
                 format_tweet(tweet),
-                delete_after=60
+                delete_after=150
             )
+            self.last_tweets[message.channel.id] = tweet
             self.run_async(self.update_tweet(tweet, m))
 
     @command(
@@ -163,6 +184,35 @@ class Twitter(Plugin):
                     .format(f.code_block(users))
             )
 
+    @command(p.string('!like'))
+    async def like_tweet(self, message):
+        if message.channel.id not in self.last_tweets:
+            return
+
+        oauth_user = self.get_user_oauth(message.author)
+        if oauth_user is None:
+            await self.inform_user_about_connections(message.author)
+
+        user_api = self.get_user_api(oauth_user)
+
+        user_api.favorites.create(_id=self.last_tweets[message.channel.id]['id'])
+
+    @command(p.string('!rt'))
+    async def rt_tweet(self, message):
+        if message.channel.id not in self.last_tweets:
+            return
+
+        oauth_user = self.get_user_oauth(message.author)
+        if oauth_user is None:
+            await self.inform_user_about_connections(message.author)
+
+        user_api = self.get_user_api(oauth_user)
+
+        user_api.statuses.retweet(
+            id=self.last_tweets[message.channel.id]['id'],
+            _method='POST'
+        )
+
     '''
     Details
     '''
@@ -221,6 +271,7 @@ class Twitter(Plugin):
                             server.default_channel,
                             format_tweet(latest)
                         )
+                        self.last_tweets[server.default_channel.id] = latest
                         self.run_async(self.update_tweet(latest, m))
 
         self.debug('No longer monitoring {}'.format(user_id))
@@ -234,3 +285,112 @@ class Twitter(Plugin):
             except Exception as e:
                 self.error(e)
                 pass
+
+    # AUTHORIZE_CALLBACK = 'https://globibot.com/twitter/authorize'
+    AUTHORIZE_CALLBACK = 'https://vm:3000/bot/twitter/authorize'
+    def request_token(self, user):
+        tweaked_twitter_client = TwitterAPI(
+            auth        = self.oauth,
+            format      = '',
+            api_version = None
+        )
+
+        try:
+            response = tweaked_twitter_client.oauth.request_token(
+                oauth_callback = Twitter.AUTHORIZE_CALLBACK
+            )
+        except Exception as e:
+            self.error('Error while generating oauth token: {}'.format(e))
+        else:
+            params = dict(
+                (key, value) for key, value in (
+                    component.split('=')
+                    for component in response.split('&')
+                )
+            )
+
+            try:
+                token = params['oauth_token']
+                secret = params['oauth_token_secret']
+            except:
+                return
+            else:
+                self.info('Generated request token for {}'.format(user.name))
+                self.request_tokens[token] = secret
+                return token
+
+    def save_user(self, user, oauth_token, oauth_verifier):
+        oauth = OAuth(
+            oauth_token,
+            self.request_tokens[oauth_token],
+            self.config.get(c.CONSUMER_KEY_KEY),
+            self.config.get(c.CONSUMER_SECRET_KEY),
+        )
+        tweaked_twitter_client = TwitterAPI(
+            auth        = oauth,
+            format      = '',
+            api_version = None
+        )
+
+        try:
+            response = tweaked_twitter_client.oauth.access_token(
+                oauth_verifier = oauth_verifier
+            )
+        except Exception as e:
+            self.error(e)
+            pass
+        else:
+            params = dict(
+                (key, value) for key, value in (
+                    component.split('=')
+                    for component in response.split('&')
+                )
+            )
+
+            with self.transaction() as trans:
+                trans.execute(q.add_user, dict(
+                    id = user.id,
+                    token = params['oauth_token'],
+                    secret = params['oauth_token_secret']
+                ))
+
+    def disconnect_user(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.delete_user, dict(id=user.id))
+
+    def user_connected(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.get_user, dict(id=user.id))
+
+            if trans.fetchone():
+                return True
+
+        return False
+
+    def get_user_oauth(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.get_user, dict(id=user.id))
+
+            data = trans.fetchone()
+            if data:
+                return OAuthUser(*data)
+
+    def get_user_api(self, oauth_user):
+        oauth = OAuth(
+            oauth_user.token,
+            oauth_user.secret,
+            self.config.get(c.CONSUMER_KEY_KEY),
+            self.config.get(c.CONSUMER_SECRET_KEY),
+        )
+
+        return TwitterAPI(auth = oauth)
+
+    async def inform_user_about_connections(self, user):
+        await self.send_message(
+            user,
+            'Psst\nI noticed that you tried using a special Twitter command\n'
+            'This command requires me to manipulate a limited scope of '
+            'your Twitter account\n'
+            'If you trust me enough to do so, please go to '
+            'https://globibot.com/#connections to connect your Twitter acount'
+        )

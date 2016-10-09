@@ -7,6 +7,11 @@ class API {
   static logs()              { return API.jsonCall('/logs/top')                }
   static userLogs(snowflake) { return API.jsonCall(`/logs/user/${snowflake}`)  }
   static giveawayInfo()      { return API.jsonCall('/giveaways/user')          }
+  static twitterOAuthToken() { return API.jsonCall('/twitter/oauth_token')     }
+  static twitterStatus()     { return API.jsonCall('/twitter/status')          }
+  static twitterDisconnect() {
+    return API.jsonCall('/twitter/disconnect', { method: 'POST' })
+  }
 
   static giveawayStart(serverId, title, content) {
     let form = new FormData
@@ -60,7 +65,7 @@ class API {
   }
 
   static voiceWebSocket() {
-    return new WebSocket(`wss://${document.domain}/ws/voice`)
+    return new WebSocket(`wss://${document.domain}:8443/ws/voice`)
   }
 
   static jsonCall(route, extra={}) {
