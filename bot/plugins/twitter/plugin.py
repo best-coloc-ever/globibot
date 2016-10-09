@@ -186,32 +186,65 @@ class Twitter(Plugin):
 
     @command(p.string('!like'))
     async def like_tweet(self, message):
-        if message.channel.id not in self.last_tweets:
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
             return
 
         oauth_user = self.get_user_oauth(message.author)
         if oauth_user is None:
             await self.inform_user_about_connections(message.author)
+            return
 
         user_api = self.get_user_api(oauth_user)
 
-        user_api.favorites.create(_id=self.last_tweets[message.channel.id]['id'])
+        try:
+            user_api.favorites.create(_id=tweet['id'])
+        except Exception as e:
+            await self.send_message(
+                message.author,
+                'I couldn\'t make you like `{}`\'s tweet\n'
+                'Twitter said:\n{}'
+                    .format(tweet['user']['screen_name'], f.code_block(str(e.response_data)))
+            )
+        else:
+            await self.send_message(
+                message.channel,
+                '{} I made you like `{}`\'s tweet 👍'
+                    .format(message.author.mention, tweet['user']['screen_name']),
+                delete_after = 5
+            )
 
     @command(p.string('!rt'))
     async def rt_tweet(self, message):
-        if message.channel.id not in self.last_tweets:
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
             return
 
         oauth_user = self.get_user_oauth(message.author)
         if oauth_user is None:
             await self.inform_user_about_connections(message.author)
+            return
 
         user_api = self.get_user_api(oauth_user)
 
-        user_api.statuses.retweet(
-            id=self.last_tweets[message.channel.id]['id'],
-            _method='POST'
-        )
+        try:
+            user_api.statuses.retweet(id=tweet['id'], _method='POST')
+        except Exception as e:
+            await self.send_message(
+                message.author,
+                'I couldn\'t make you retweet `{}`\'s tweet\n'
+                'Twitter said:\n{}'
+                    .format(tweet['user']['screen_name'], f.code_block(str(e.response_data)))
+            )
+        else:
+            await self.send_message(
+                message.channel,
+                '{} I made you retweet `{}`\'s tweet 👍'
+                    .format(message.author.mention, tweet['user']['screen_name']),
+                delete_after = 5
+            )
 
     '''
     Details
