@@ -38,6 +38,7 @@ tweet_time = lambda tweet: datetime.strptime(
 def format_tweet(tweet):
     time_difference = datetime.now() - tweet_time(tweet)
 
+    screen_name = tweet['user']['screen_name']
     text = (
         'Last tweet from `@{screen_name}` ({ago}):\n\n'
         '{text}\n'
@@ -45,12 +46,12 @@ def format_tweet(tweet):
         '**__source__: {tweet_link}**\n\n'
         '*You can use `!like` to like the tweet or `!rt` to retweet it*'
     ).format(
-        screen_name = tweet['user']['screen_name'],
+        screen_name = screen_name,
         text        = f.code_block(tweet['text']),
         retweets    = tweet['retweet_count'],
         favourites  = tweet['favorite_count'],
         ago         = naturaltime(time_difference),
-        tweet_link  = 'https://twitter.com/statuses/{}'.format(tweet['id'])
+        tweet_link  = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id'])
     )
 
     try:
