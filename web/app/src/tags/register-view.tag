@@ -110,7 +110,7 @@
         self.usernameValidated = false
         self.update()
 
-        fetch('/bot/api/find?user_name=' + username)
+        fetch('/bot/api/find?user_name=' + encodeURIComponent(username))
           .then(response => {
             self.searchingUsername = false
 
