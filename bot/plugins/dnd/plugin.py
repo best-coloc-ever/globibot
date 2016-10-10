@@ -69,9 +69,9 @@ def roll_die(die):
 
     # Special display of critical fails and hits for d20s
     if die.face_count == 20:
-        if total <= 1:
+        if results[-1] <= 1:
             result_string += ' (Critical Fail!)'
-        elif total >= 20:
+        elif results[-1] >= 20:
             result_string += ' (Critical Hit!)'
 
     return '{:10} => {}'.format(description, result_string)
@@ -90,7 +90,7 @@ class Dnd(Plugin):
         results = map(roll_die, grouped_dice)
 
         response = (
-            '{} 🎲 rolling your die\n'
+            '{} 🎲 rolling your dice\n'
             '{}'
                 .format(
                     message.author.mention,
