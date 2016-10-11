@@ -19,6 +19,7 @@ from datetime import datetime
 from collections import namedtuple
 
 import asyncio
+import re
 
 MonitoredChannel = namedtuple(
     'MonitoredChannel',
@@ -44,7 +45,8 @@ def format_tweet(tweet):
         '{text}\n'
         '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
         '**__source__: {tweet_link}**\n\n'
-        '*You can use `!like` to like the tweet or `!rt` to retweet it*'
+        '🆕 *You can use `!like` to like the tweet or `!rt` to retweet it*\n'
+        '*also available: `!unlike` `!unrt` `!reply`*'
     ).format(
         screen_name = screen_name,
         text        = f.code_block(tweet['text']),
@@ -187,65 +189,54 @@ class Twitter(Plugin):
 
     @command(p.string('!like'))
     async def like_tweet(self, message):
-        try:
-            tweet = self.last_tweets[message.channel.id]
-        except KeyError:
-            return
+        await self.twitter_three_legged_action(
+            message,
+            lambda api, tweet: api.favorites.create(_id=tweet['id']),
+            'like',
+        )
 
-        oauth_user = self.get_user_oauth(message.author)
-        if oauth_user is None:
-            await self.inform_user_about_connections(message.author)
-            return
-
-        user_api = self.get_user_api(oauth_user)
-
-        try:
-            user_api.favorites.create(_id=tweet['id'])
-        except Exception as e:
-            await self.send_message(
-                message.author,
-                'I couldn\'t make you like `{}`\'s tweet\n'
-                'Twitter said:\n{}'
-                    .format(tweet['user']['screen_name'], f.code_block(str(e.response_data)))
-            )
-        else:
-            await self.send_message(
-                message.channel,
-                '{} I made you like `{}`\'s tweet 👍'
-                    .format(message.author.mention, tweet['user']['screen_name']),
-                delete_after = 5
-            )
+    @command(p.string('!unlike'))
+    async def unlike_tweet(self, message):
+        await self.twitter_three_legged_action(
+            message,
+            lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
+            'unlike',
+        )
 
     @command(p.string('!rt'))
     async def rt_tweet(self, message):
-        try:
-            tweet = self.last_tweets[message.channel.id]
-        except KeyError:
-            return
+        await self.twitter_three_legged_action(
+            message,
+            lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
+            'retweet',
+        )
 
-        oauth_user = self.get_user_oauth(message.author)
-        if oauth_user is None:
-            await self.inform_user_about_connections(message.author)
-            return
+    @command(p.string('!unrt'))
+    async def unrt_tweet(self, message):
+        await self.twitter_three_legged_action(
+            message,
+            lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
+            'unretweet',
+        )
 
-        user_api = self.get_user_api(oauth_user)
+    @command(p.string('!reply'))
+    async def reply_tweet(self, message):
+        # Replace emojis to avoid weird moon runes
+        reply = re.sub(
+            r'<:(.*):[0-9]+>',
+            r'\1',
+            message.clean_content[len('!reply'):].strip()
+        )
 
-        try:
-            user_api.statuses.retweet(id=tweet['id'], _method='POST')
-        except Exception as e:
-            await self.send_message(
-                message.author,
-                'I couldn\'t make you retweet `{}`\'s tweet\n'
-                'Twitter said:\n{}'
-                    .format(tweet['user']['screen_name'], f.code_block(str(e.response_data)))
-            )
-        else:
-            await self.send_message(
-                message.channel,
-                '{} I made you retweet `{}`\'s tweet 👍'
-                    .format(message.author.mention, tweet['user']['screen_name']),
-                delete_after = 5
-            )
+        await self.twitter_three_legged_action(
+            message,
+            lambda api, tweet: api.statuses.update(
+                status='@{} {}'.format(tweet['user']['screen_name'], reply),
+                in_reply_to_status_id=tweet['id'],
+                _method='POST'
+            ),
+            'reply to',
+        )
 
     '''
     Details
@@ -427,3 +418,41 @@ class Twitter(Plugin):
             'If you trust me enough to do so, please go to '
             'https://globibot.com/#connections to connect your Twitter acount'
         )
+
+    async def twitter_three_legged_action(self, message, action, description):
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            return
+
+        oauth_user = self.get_user_oauth(message.author)
+        if oauth_user is None:
+            await self.inform_user_about_connections(message.author)
+            return
+
+        user_api = self.get_user_api(oauth_user)
+
+        try:
+            action(user_api, tweet)
+        except Exception as e:
+            await self.send_message(
+                message.author,
+                'I couldn\'t make you {} `{}`\'s tweet\n'
+                'Twitter said:\n{}'
+                    .format(
+                        tweet['user']['screen_name'],
+                        description,
+                        f.code_block(str(e.response_data))
+                    )
+            )
+        else:
+            await self.send_message(
+                message.channel,
+                '{} I made you {} `{}`\'s tweet 👍'
+                    .format(
+                        message.author.mention,
+                        description,
+                        tweet['user']['screen_name']
+                    ),
+                delete_after = 5
+            )
