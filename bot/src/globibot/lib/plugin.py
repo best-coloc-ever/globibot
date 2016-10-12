@@ -141,6 +141,9 @@ class Plugin:
     async def dispatch_member_update(self, before, after):
         await self.on_member_update(before, after)
 
+    async def dispatch_raw(self, event, *args, **kwargs):
+        await self.on_raw_event(event, *args, **kwargs)
+
     async def on_new(self, message):
         pass
 
@@ -151,6 +154,9 @@ class Plugin:
         pass
 
     async def on_member_update(self, before, after):
+        pass
+
+    async def on_raw_event(self, event, *args, **kwargs):
         pass
 
     def match_commands(self, message):

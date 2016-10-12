@@ -10,6 +10,8 @@ from .lib.plugin_collection import PluginCollection
 from . import constants as c
 from . import api
 
+import asyncio
+
 class Globibot(DiscordClient):
 
     def __init__(self, config, db_config, web, plugin_path):
@@ -95,6 +97,22 @@ class Globibot(DiscordClient):
     async def on_member_update(self, before, after):
         self._dispatch(Plugin.dispatch_member_update, before, after)
 
+    async def _run_event(self, event, *args, **kwargs):
+        try:
+            self._dispatch(Plugin.dispatch_raw, event, *args, **kwargs)
+        except Exception as e:
+            logger.error('Error dispatching raw event: {}'.format(e))
+
+        try:
+            await getattr(self, event)(*args, **kwargs)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            try:
+                await self.on_error(event, *args, **kwargs)
+            except asyncio.CancelledError:
+                pass
+
     '''
     Helpers
     '''
@@ -170,7 +188,7 @@ class Globibot(DiscordClient):
 
         self._dispatch(plugin_action, message, *args)
 
-    def _dispatch(self, plugin_action, *args):
+    def _dispatch(self, plugin_action, *args, **kwargs):
         for plugin in self.plugin_collection.plugins:
-            future = plugin_action(plugin, *args)
+            future = plugin_action(plugin, *args, **kwargs)
             ensure_future(future)
