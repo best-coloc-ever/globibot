@@ -4,6 +4,7 @@ from globibot.lib.decorators import command
 
 from globibot.lib.helpers import parsing as p
 from globibot.lib.helpers import formatting as f
+from globibot.lib.helpers.hooks import user_cooldown, global_cooldown
 
 from .grammar import DiceRoll, dice_roll_parser
 from . import invariants as inv
@@ -81,7 +82,9 @@ class Dnd(Plugin):
     @command(
         p.string('!roll') +
         p.bind(p.oneplus(dice_roll_parser), 'dice') +
-        p.eof
+        p.eof,
+        # restrictions
+        user_cooldown(30), global_cooldown(15)
     )
     async def roll_dice_command(self, message, dice):
         grouped_dice = group_dice(dice)
