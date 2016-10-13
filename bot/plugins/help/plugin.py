@@ -45,10 +45,19 @@ class Help(Plugin):
 
         plugin = self.get_plugin(plugin_name)
 
+        def hooks_description(hooks):
+            if hooks:
+                hook_descriptions = (
+                    hook.__doc__.strip() for hook in hooks
+                    if hook.__doc__
+                )
+                return '/* {} */'.format(' | '.join(hook_descriptions))
+            return ''
+
         raw_components =[
             '{}{}'.format(
                 validator.parser.name,
-                ' /* master only */' if validator.pre_hook == master_only else ''
+                hooks_description(validator.hooks)
             )
             for validator, _ in plugin.actions
         ]

@@ -15,12 +15,12 @@ def extract_dice_type(token):
 dice_grammar = (
     p.maybe(p.integer) +
     (dice_type_grammar >> extract_dice_type)
-)
+).named('Dice')
 
 dice_modifier_grammar = (
     (p.one_of(p.a, '+', '-') >> p.to_s) +
     p.integer
-)
+).named('Modifier')
 
 def to_dice_roll(parsed):
     count, face_count, modifier = parsed

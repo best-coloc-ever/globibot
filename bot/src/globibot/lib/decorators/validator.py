@@ -1,13 +1,15 @@
 COMMAND_VALIDATORS_ATTR = 'validators'
 
-NO_HOOK = lambda bot, message: True
-
-def validator(validate, pre_hook=NO_HOOK, **kwargs):
+def validator(validate, *hooks, **kwargs):
 
     def wrapped(func):
 
         def call(plugin, message, *args, **kwargs):
-            if pre_hook(plugin.bot, message):
+            hook_results = [
+                hook(plugin.bot, message)
+                for hook in hooks
+            ]
+            if all(hook_results):
                 return func(plugin, message, *args, **kwargs)
 
         if hasattr(func, COMMAND_VALIDATORS_ATTR):
@@ -20,6 +22,6 @@ def validator(validate, pre_hook=NO_HOOK, **kwargs):
         return call
 
     # For introspection
-    validate.pre_hook = pre_hook
+    validate.hooks = hooks
 
     return wrapped
