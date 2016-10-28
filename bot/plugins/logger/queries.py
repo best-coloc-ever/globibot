@@ -81,3 +81,11 @@ server_activity_per_channel = '''
         group by    channel_id
         order by    count(*)
 '''
+
+user_attachments = '''
+    select      attachments
+        from    log
+        where   author_id = %(author_id)s
+            and server_id in %(server_ids)s
+            and attachments != '{}'
+'''

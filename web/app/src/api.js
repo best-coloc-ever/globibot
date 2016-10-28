@@ -12,6 +12,7 @@ class API {
   static twitterDisconnect() {
     return API.jsonCall('/twitter/disconnect', { method: 'POST' })
   }
+  static attachments(snowflake) { return API.jsonCall(`/logs/attachments/${snowflake}`) }
 
   static giveawayStart(serverId, title, content) {
     let form = new FormData

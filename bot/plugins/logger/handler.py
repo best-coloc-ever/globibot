@@ -147,3 +147,21 @@ class LogsApiUserHandler(SessionHandler):
                 for log_id, channel_id, server_id, content, is_deleted, date
                 in trans.fetchall()
             ]
+
+class LogsAttachmentsHandler(SessionHandler):
+
+    @authenticated
+    @respond_json
+    def get(self, user_id):
+        user_servers = self.bot.servers_of(self.current_user)
+
+        with self.plugin.transaction() as trans:
+            trans.execute(q.user_attachments, dict(
+                author_id = user_id,
+                server_ids = tuple(server.id for server in user_servers)
+            ))
+
+            return dict(attachments = [
+                attachment for attachments in trans.fetchall()
+                for attachment in attachments[0]
+            ])

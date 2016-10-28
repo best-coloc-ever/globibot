@@ -8,6 +8,7 @@
         <a href="#logs-user-stats" class="mdl-tabs__tab is-active">Stats</a>
         <a href="#logs-user-messages" class="mdl-tabs__tab">Messages</a>
         <a href="#logs-user-words" class="mdl-tabs__tab">Words</a>
+        <a href="#logs-user-attachments" class="mdl-tabs__tab">Attachments</a>
       </div>
 
       <div class="mdl-tabs__panel is-active" id="logs-user-stats">
@@ -117,6 +118,15 @@
         </div>
       </div>
 
+      <div class="mdl-tabs__panel" id="logs-user-attachments">
+        <div class="mdl-grid">
+          <div class="mdl-cell mdl-cell--2-col"></div>
+          <div class="mdl-cell mdl-cell--8-col">
+            <img each={ source in attachments } src={ source } class="attachment"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -129,6 +139,10 @@
       overflow-wrap:break-word;
       max-width: 300px;
     }
+    .attachment {
+      max-width: 100%;
+      padding: 10px;
+    }
   </style>
 
   <script>
@@ -136,6 +150,7 @@
 
     this.userId = opts.userId
     this.stats = null
+    this.attachments = []
 
     class Stats {
 
@@ -366,6 +381,12 @@
 
       API.userLogs(this.userId).then(data => {
         this.stats = new Stats(data)
+        this.update()
+      })
+
+      API.attachments(this.userId).then(data => {
+        this.attachments = data.attachments
+        console.log(data)
         this.update()
       })
 
