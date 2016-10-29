@@ -63,11 +63,24 @@ class TwitchAPI:
 
         return TwitchAPI.Channel(json)
 
-    async def get_json(self, endpoint, params={}):
+    USER_ENDPOINT = '/user'
+    USER_FOLLOWED_ENDPOINT = lambda user: '/users/{}/follows/channels'.format(user)
+    Follow = OBJECT_BUILDER('Follow')
+    async def user_followed(self, token):
+        user = await self.get_json(TwitchAPI.USER_ENDPOINT, token=token)
+
+        json = await self.get_json(
+            TwitchAPI.USER_FOLLOWED_ENDPOINT(user['name']),
+            params = dict(limit=100),
+        )
+
+        return list(map(TwitchAPI.Follow, json['follows']))
+
+    async def get_json(self, endpoint, params={}, token=None):
         url = url_concat(TwitchAPI.BASE_URL + endpoint, params)
         request = HTTPRequest(
             url     = url,
-            headers = self.api_headers
+            headers = self.api_headers(token)
         )
         tornado_future = self.client.fetch(request)
         future = to_asyncio_future(tornado_future)
@@ -79,8 +92,11 @@ class TwitchAPI:
     Details
     '''
 
-    @property
-    def api_headers(self):
-        return {
-            'Client-ID': self.client_id
+    def api_headers(self, token):
+        headers = {
+            'Client-ID':     self.client_id,
         }
+        if token:
+            headers['Authorization'] = 'OAuth {}'.format(token)
+
+        return headers
