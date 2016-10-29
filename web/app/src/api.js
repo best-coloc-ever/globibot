@@ -13,6 +13,28 @@ class API {
     return API.jsonCall('/twitter/disconnect', { method: 'POST' })
   }
   static attachments(snowflake) { return API.jsonCall(`/logs/attachments/${snowflake}`) }
+  static twitchStatus()      { return API.jsonCall('/twitch/status')           }
+  static twitchOAuthUrl()    { return API.path('/twitch/oauth')}
+  static twitchDisconnect()  {
+    return API.jsonCall('/twitch/disconnect', { method: 'POST' })
+  }
+  static twitchFollowed()    { return API.jsonCall('/twitch/followed') }
+  static twitchMention(channelName, on) {
+    let form = new FormData
+
+    form.append('channel', channelName)
+    form.append('state', on)
+
+    return API.jsonCall('/twitch/mention', { body: form, method: 'POST' })
+  }
+  static twitchWhisper(channelName, on) {
+    let form = new FormData
+
+    form.append('channel', channelName)
+    form.append('state', on)
+
+    return API.jsonCall('/twitch/whisper', { body: form, method: 'POST' })
+  }
 
   static giveawayStart(serverId, title, content) {
     let form = new FormData

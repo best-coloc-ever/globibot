@@ -9,14 +9,35 @@ from . import queries as q
 from . import constants as c
 from .api import TwitchAPI
 from .pubsub import PubSub
+from .handlers import TwitchStatusHandler, OAuthRequestTokenHandler, \
+    OAuthAuthorizeHandler, TwitchDisconnectHandler, TwitchFollowedHandler, \
+    TwitchMentionHandler, TwitchWhisperHandler
+
+from tornado.escape import json_decode
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
+from tornado.platform.asyncio import to_asyncio_future
 
 from collections import namedtuple
 
+from urllib.parse import urlencode
+
+import random
+import string
 import asyncio
 
 MonitoredChannel = namedtuple(
     'MonitoredChannel',
     ['id', 'name', 'server_id']
+)
+
+NotifiedChannel = namedtuple(
+    'NotifiedChannel',
+    ['name', 'method']
+)
+
+ChannelState = lambda name, state: dict(
+    name = name,
+    on = state
 )
 
 class Twitch(Plugin):
@@ -32,6 +53,19 @@ class Twitch(Plugin):
         self.pubsub = PubSub(self.debug, self.run_async)
 
         self.restore_monitored()
+
+        context = dict(plugin=self, bot=self.bot)
+        self.add_web_handlers(
+            (r'/twitch/oauth', OAuthRequestTokenHandler, context),
+            (r'/twitch/authorize', OAuthAuthorizeHandler, context),
+            (r'/twitch/status', TwitchStatusHandler, context),
+            (r'/twitch/followed', TwitchFollowedHandler, context),
+            (r'/twitch/disconnect', TwitchDisconnectHandler, context),
+            (r'/twitch/mention', TwitchMentionHandler, context),
+            (r'/twitch/whisper', TwitchWhisperHandler, context),
+        )
+
+        self.token_states = dict()
 
     def unload(self):
         asyncio.ensure_future(self.pubsub.shutdown())
@@ -191,10 +225,13 @@ class Twitch(Plugin):
         async for event in events:
             self.debug(event)
             if event['type'] == 'stream-up':
+                users = self.users_to_mention(name)
+                users_mention = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
                     server.default_channel,
-                    '`{}` just went live!\n{}'
-                        .format(channel.display_name, channel.url)
+                    '{}\n`{}` just went live!\n{}\n'
+                    '🆕 *You can now link your Twitch account on https://globibot.com/#connections to get notified when your favorite streamers go live*'
+                        .format(users_mention, channel.display_name, channel.url)
                 )
             if event['type'] == 'stream-down':
                 await self.send_message(
@@ -204,8 +241,45 @@ class Twitch(Plugin):
 
         self.info('Stopped monitoring: {}'.format(name))
 
+    async def whisper_monitor_forever(self, channel_name, user):
+        events = await self.pubsub.subscribe(
+            PubSub.Topics.VIDEO_PLAYBACK(channel_name),
+            user.id
+        )
+
+        async for event in events:
+            if event['type'] == 'stream-up':
+                await self.send_message(
+                    user,
+                    '`{}` just went live!'
+                        .format(channel_name)
+                )
+
+    def users_to_mention(self, channel_name):
+        with self.transaction() as trans:
+            trans.execute(q.get_subscribed_users, dict(
+                channel = channel_name,
+                method = 'mention'
+            ))
+
+            return [user_id for user_id, in trans.fetchall()]
+
+        return []
+
+    def users_to_whisper(self, channel_name):
+        with self.transaction() as trans:
+            trans.execute(q.get_subscribed_users, dict(
+                channel = channel_name,
+                method = 'whisper'
+            ))
+
+            return [user_id for user_id, in trans.fetchall()]
+
+        return []
+
     def restore_monitored(self):
         with self.transaction() as trans:
+            # Server monitors
             trans.execute(q.get_monitored)
             monitored = [MonitoredChannel(*row) for row in trans.fetchall()]
 
@@ -215,3 +289,156 @@ class Twitch(Plugin):
                     if serv.id == str(channel.server_id)
                 )
                 self.run_async(self.monitor_forever(channel.name, server))
+
+            # Whispers
+            trans.execute(q.get_all_notify_whispers)
+
+            for user_id, channel_name in trans.fetchall():
+                user = self.bot.find_user(str(user_id))
+                if user:
+                    self.run_async(self.whisper_monitor_forever(channel_name, user))
+
+    # AUTHORIZE_CALLBACK = 'https://globibot.com/bot/twitch/authorize'
+    AUTHORIZE_CALLBACK = 'https://vm:3000/bot/twitch/authorize'
+    def request_token_state(self, user):
+        state = ''.join(
+            random.choice(string.ascii_uppercase + string.digits)
+            for _ in range(32)
+        )
+
+        self.token_states[user.id] = state
+
+        return state
+
+    async def save_user(self, user, code, state):
+        try:
+            reference_state = self.token_states[user.id]
+        except KeyError:
+            return
+        else:
+            if state != reference_state:
+                return
+
+            token = await self.access_token(code, state)
+
+            with self.transaction() as trans:
+                trans.execute(q.add_user, dict(
+                    id = user.id,
+                    token = token
+                ))
+
+    TOKEN_URL = 'https://api.twitch.tv/kraken/oauth2/token'
+    REDIRECT_URI = 'https://globibot.com/bot/twitch/authorize'
+    async def access_token(self, code, state):
+        client = AsyncHTTPClient()
+
+        payload = (
+            ('client_id', self.client_id),
+            ('client_secret', self.client_secret),
+            ('grant_type', 'authorization_code'),
+            ('redirect_uri', Twitch.REDIRECT_URI),
+            ('code', code),
+            ('state', state),
+        )
+
+        url = Twitch.TOKEN_URL
+        request = HTTPRequest(
+            url = url,
+            method = 'POST',
+            body = urlencode(payload)
+        )
+        tornado_future = client.fetch(request)
+        future = to_asyncio_future(tornado_future)
+        response = await future
+
+        data = json_decode(response.body)
+        return data['access_token']
+
+    def disconnect_user(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.delete_user, dict(
+                id = user.id
+            ))
+
+    def user_connected(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.get_user, dict(id=user.id))
+
+            if trans.fetchone():
+                return True
+
+        return False
+
+    async def user_followed(self, user):
+        token = self.get_user_token(user)
+
+        followed = await self.api.user_followed(token)
+
+        user_servers = self.bot.servers_of(user)
+        with self.transaction() as trans:
+            trans.execute(q.get_monitored_names, dict(
+                server_ids = tuple(server.id for server in user_servers)
+            ))
+
+            monitored_names = [name for name, in trans.fetchall()]
+
+            trans.execute(q.get_notified, dict(
+                id = user.id,
+            ))
+
+            notifieds = [NotifiedChannel(*row) for row in trans.fetchall()]
+            whipered = [
+                notified.name for notified in notifieds
+                if notified.method == 'whisper'
+            ]
+            mentionned = [
+                notified.name for notified in notifieds
+                if notified.method == 'mention'
+            ]
+
+            followed_channels = [ChannelState(f.channel.name, f.channel.name in whipered) for f in followed]
+            monitored_channels = [ChannelState(name, name in mentionned) for name in monitored_names]
+
+            return (
+                followed_channels,
+                monitored_channels
+            )
+
+        return ([], [])
+
+    def get_user_token(self, user):
+        with self.transaction() as trans:
+            trans.execute(q.get_user, dict(id=user.id))
+
+            return trans.fetchone()[0]
+
+    def user_notify_mention(self, user, channel, state):
+        payload = dict(
+            id = user.id,
+            channel = channel,
+            method = 'mention'
+        )
+
+        query = q.user_notify_add if state else q.user_notify_remove
+
+        with self.transaction() as trans:
+            trans.execute(query, payload)
+
+    async def user_notify_whisper(self, user, channel, state):
+        payload = dict(
+            id = user.id,
+            channel = channel,
+            method = 'whisper'
+        )
+        query = q.user_notify_add if state else q.user_notify_remove
+
+        with self.transaction() as trans:
+            trans.execute(query, payload)
+
+            if state:
+                self.run_async(self.whisper_monitor_forever(channel, user))
+            else:
+                await self.pubsub.unsubscribe(
+                    PubSub.Topics.VIDEO_PLAYBACK(channel),
+                    user.id
+                )
