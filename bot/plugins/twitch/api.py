@@ -76,6 +76,15 @@ class TwitchAPI:
 
         return list(map(TwitchAPI.Follow, json['follows']))
 
+    VODS_ENDPOINT = lambda channel: '/channels/{}/videos'.format(channel)
+    Vod = OBJECT_BUILDER('Vod')
+    async def vods(self, name):
+        json = await self.get_json(TwitchAPI.VODS_ENDPOINT(name), dict(
+            broadcasts='true'
+        ))
+
+        return list(map(TwitchAPI.Vod, json['videos']))
+
     async def get_json(self, endpoint, params={}, token=None):
         url = url_concat(TwitchAPI.BASE_URL + endpoint, params)
         request = HTTPRequest(
