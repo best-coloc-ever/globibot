@@ -23,6 +23,7 @@ class Twitch(Plugin):
 
     def load(self):
         self.client_id = self.config.get(c.CLIENT_ID_KEY)
+        self.client_secret = self.config.get(c.CLIENT_SECRET_KEY)
 
         if not self.client_id:
             self.warning('Missing client id: API calls might not work')
