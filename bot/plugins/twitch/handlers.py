@@ -51,8 +51,8 @@ class TwitchFollowedHandler(SessionHandler):
         followed, monitored = await self.plugin.user_followed(self.current_user)
 
         return dict(
-            followed = followed,
-            monitored = monitored
+            followed = sorted(followed, key=lambda c: c['name']),
+            monitored = sorted(monitored, key=lambda c: c['name'])
         )
 
 class TwitchDisconnectHandler(SessionHandler):
