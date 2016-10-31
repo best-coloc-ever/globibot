@@ -225,7 +225,7 @@ class Twitch(Plugin):
         async for event in events:
             self.debug(event)
             if event['type'] == 'stream-up':
-                users = self.users_to_mention(name)
+                users = self.users_to_mention(name, server)
                 users_mention = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
                     server.default_channel,
@@ -255,14 +255,19 @@ class Twitch(Plugin):
                         .format(channel_name)
                 )
 
-    def users_to_mention(self, channel_name):
+    def users_to_mention(self, channel_name, server):
         with self.transaction() as trans:
             trans.execute(q.get_subscribed_users, dict(
                 channel = channel_name,
                 method = 'mention'
             ))
 
-            return [user_id for user_id, in trans.fetchall()]
+            return [
+                user_id for user_id, in trans.fetchall()
+                if server in self.bot.servers_of(
+                    self.bot.find_user(str(user_id))
+                )
+            ]
 
         return []
 
@@ -298,8 +303,6 @@ class Twitch(Plugin):
                 if user:
                     self.run_async(self.whisper_monitor_forever(channel_name, user))
 
-    # AUTHORIZE_CALLBACK = 'https://globibot.com/bot/twitch/authorize'
-    AUTHORIZE_CALLBACK = 'https://vm:3000/bot/twitch/authorize'
     def request_token_state(self, user):
         state = ''.join(
             random.choice(string.ascii_uppercase + string.digits)
@@ -380,7 +383,7 @@ class Twitch(Plugin):
                 server_ids = tuple(server.id for server in user_servers)
             ))
 
-            monitored_names = [name for name, in trans.fetchall()]
+            monitored_names = set(name for name, in trans.fetchall())
 
             trans.execute(q.get_notified, dict(
                 id = user.id,
