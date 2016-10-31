@@ -1,13 +1,6 @@
 from globibot.lib.plugin import Plugin
-# from globibot.lib.decorators import command
-# from globibot.lib.helpers import parsing as p
-from globibot.lib.helpers import formatting as f
-# from globibot.lib.helpers.hooks import master_only
-
-from .handler import RepostStaticHandler, RepostHandler, RepostAPIHandler, RepostAPIShamesHandler, RepostUserHandler,RepostAPIUserHandler
 
 from collections import defaultdict
-from datetime import datetime
 from time import time
 
 import re
@@ -19,15 +12,6 @@ class Repost(Plugin):
     def load(self):
         self.shames = defaultdict(lambda: defaultdict(list))
         self.links = self.load_links()
-
-        self.add_web_handlers(
-            (r'/repost/api/shames/(?P<server_id>\w+)', RepostAPIShamesHandler, dict(plugin=self)),
-            (r'/repost/api/user/(?P<server_id>\w+)/(?P<user_id>\w+)', RepostAPIUserHandler, dict(plugin=self)),
-            (r'/repost/api/(?P<server_id>\w+)', RepostAPIHandler, dict(plugin=self)),
-            (r'/repost', RepostHandler),
-            (r'/repost/user', RepostUserHandler),
-            (r'/repost/(.*)', RepostStaticHandler),
-        )
 
     async def on_new(self, message):
         await self.process_message(message)

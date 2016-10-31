@@ -5,9 +5,6 @@ from globibot.lib.helpers import parsing as p
 from globibot.lib.helpers import formatting as f
 from globibot.lib.helpers.hooks import master_only
 
-# from . import handler
-
-from .handler import StatsStaticHandler, StatsGameHandler, StatsUserHandler, StatsGamesTopHandler, StatsGamesUserHandler
 from . import queries as q
 
 from collections import namedtuple
@@ -25,14 +22,6 @@ class Stats(Plugin):
     GAME_DUMP_INTERVAL = 60 * 10
 
     def load(self):
-        self.add_web_handlers(
-            (r'/stats/game', StatsGameHandler),
-            (r'/stats/user', StatsUserHandler),
-            (r'/stats/api/games/top/(?P<server_id>\w+)', StatsGamesTopHandler, dict(plugin=self)),
-            (r'/stats/api/games/user/(?P<user_id>\w+)', StatsGamesUserHandler, dict(plugin=self)),
-            (r'/stats/(.*)', StatsStaticHandler),
-        )
-
         self.game_times_by_id = dict()
 
         now = time()
