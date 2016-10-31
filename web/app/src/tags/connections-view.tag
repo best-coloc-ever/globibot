@@ -14,7 +14,7 @@
 
           <div class="mdl-card__title" id="logs-title">
             <div class="mdl-cell mdl-cell--2-col">
-              <img src="/dist/img/twitter.png"></img>
+              <img src="/img/twitter.png"></img>
             </div>
             <div class="mdl-cell mdl-cell--7-col">
               <h2 class="mdl-card__title-text">Twitter</h2>
@@ -51,7 +51,7 @@
 
           <div class="mdl-card__title" id="logs-title">
             <div class="mdl-cell mdl-cell--2-col">
-              <img src="/dist/img/twitch.png"></img>
+              <img src="/img/twitch.png"></img>
             </div>
             <div class="mdl-cell mdl-cell--7-col">
               <h2 class="mdl-card__title-text">Twitch</h2>

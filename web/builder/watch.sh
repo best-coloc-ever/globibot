@@ -2,9 +2,7 @@
 
 browser-sync start \
     --proxy https://web \
-    --files /app/dist \
-    --files /app/index.html \
-    --files /app/styles.css \
+    --files /dist \
     --no-open \
     --no-notify \
     &

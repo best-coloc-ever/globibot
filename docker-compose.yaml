@@ -3,6 +3,8 @@ version: '2'
 volumes:
   # Database storage
   globibot-data: {}
+  # Bundled website
+  globibot-web-dist: {}
 
 services:
 
@@ -26,4 +28,4 @@ services:
     build: ./web/server
     volumes:
       # Static web files
-      - './web/app:/web'
+      - 'globibot-web-dist:/web'

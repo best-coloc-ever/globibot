@@ -8,7 +8,7 @@ module.exports = {
   },
 
   output: {
-    path: './dist',
+    path: '/dist',
     filename: 'bundle.js'
   },
 
@@ -33,7 +33,10 @@ module.exports = {
       /* filename= */'vendor.bundle.js'
     ),
     new CopyWebpackPlugin([
-      { from: 'img', to: 'img' }
+      { from: 'img', to: 'img' },
+      { from: 'index.html' },
+      { from: 'styles.css' },
+      { from: 'favicon.png' },
     ])
   ]
 };

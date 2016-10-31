@@ -3,6 +3,8 @@ version: '2'
 volumes:
   # Stores all the node packages
   node-modules: {}
+  # Bundled website
+  globibot-web-dist: {}
 
 services:
 
@@ -23,6 +25,8 @@ services:
       - './web/app:/app'
       # Node specific
       - 'node-modules:/app/node_modules'
+      # Output bundle
+      - 'globibot-web-dist:/dist'
     ports:
       # Exposing port for browser-sync
       - '3000:3000'
