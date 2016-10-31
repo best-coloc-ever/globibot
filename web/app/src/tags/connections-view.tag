@@ -115,14 +115,14 @@
     </div>
 
     <div class="mdl-grid" if={ twitchFollowedChannels }>
-      <div class="mdl-cell mdl-cell--4-col" each={ channels in twitchFollowedChannels }>
+      <div class="mdl-cell mdl-cell--4-col" each={ channels, i in twitchFollowedChannels }>
 
         <table class="mdl-data-table mdl-js-data-table" name="twitch-table-followed">
           <tr>
             <th class="mdl-data-table__cell--non-numeric" style="width:100%">Channel</th>
             <th class="mdl-data-table__cell--non-numeric">
-              <span id="twitch-whispers">Whisper</span>
-              <div class="mdl-tooltip" data-mdl-for="twitch-whispers">
+              <span id={ "twitch-whispers-" + i }>Whisper</span>
+              <div class="mdl-tooltip" data-mdl-for={ "twitch-whispers-" + i }>
                 Get whispered whenever a channel<br>you follow goes live
               </div>
             </th>
