@@ -102,17 +102,6 @@ class Stats(Plugin):
                 delete_after = 25
             )
 
-    @command(
-        stats_games_prefix + p.string('server'), master_only
-    )
-    async def top_games_link(self, message):
-        await self.send_message(
-            message.channel,
-            'top games played on this server: https://globibot.com/stats/game?id={}'
-                .format(message.server.id),
-            delete_after = 45
-        )
-
     '''
     Details
     '''
