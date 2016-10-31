@@ -86,7 +86,7 @@
     <div class="mdl-grid" if={ twitchMonitoredChannels }>
       <div class="mdl-cell mdl-cell--4-col"></div>
 
-      <div class="mdl-cell mdl-cell--5-col">
+      <div class="mdl-cell mdl-cell--4-col">
         <table class="mdl-data-table mdl-js-data-table" name="twitch-table-monitored">
           <tr>
             <th class="mdl-data-table__cell--non-numeric" style="width:100%">Channel</th>
@@ -115,9 +115,8 @@
     </div>
 
     <div class="mdl-grid" if={ twitchFollowedChannels }>
-      <div class="mdl-cell mdl-cell--4-col"></div>
+      <div class="mdl-cell mdl-cell--4-col" each={ channels in twitchFollowedChannels }>
 
-      <div class="mdl-cell mdl-cell--5-col">
         <table class="mdl-data-table mdl-js-data-table" name="twitch-table-followed">
           <tr>
             <th class="mdl-data-table__cell--non-numeric" style="width:100%">Channel</th>
@@ -129,7 +128,7 @@
             </th>
           </tr>
 
-          <tr each={ channel in twitchFollowedChannels }>
+          <tr each={ channel in channels }>
             <td class="mdl-data-table__cell--non-numeric">{ channel.name }</td>
             <td>
               <label class="mdl-switch mdl-js-switch">
@@ -248,7 +247,12 @@
             API.twitchFollowed()
               .then(data => {
                 this.twitchMonitoredChannels = data.monitored
-                this.twitchFollowedChannels = data.followed
+                let chunkSize = Math.round(data.followed.length / 3)
+                this.twitchFollowedChannels = [
+                  data.followed.slice(0, chunkSize),
+                  data.followed.slice(chunkSize, chunkSize * 2),
+                  data.followed.slice(chunkSize * 2)
+                ]
                 this.update()
                 componentHandler.upgradeElements(this['twitch-table-monitored'])
                 componentHandler.upgradeElements(this['twitch-table-followed'])
