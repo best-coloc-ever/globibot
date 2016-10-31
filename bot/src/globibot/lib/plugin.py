@@ -110,6 +110,8 @@ class Plugin:
         async def run():
             try:
                 await future
+            except asyncio.CancelledError:
+                self.warning('Cancelling: {}'.format(future))
             except Exception:
                 self.error(format_exc(10))
             self.asyncs.remove(future)
