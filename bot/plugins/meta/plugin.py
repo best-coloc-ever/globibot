@@ -8,7 +8,7 @@ from functools import reduce
 
 from .permissions import permission_names, PERMISSION_NAMES
 
-from discord import ChannelType
+from discord import ChannelType, Game
 
 class Meta(Plugin):
 
@@ -72,11 +72,15 @@ class Meta(Plugin):
             delete_after = 30
         )
 
-    @command(
-        p.string('!test'), master_only
-    )
-    async def test(self, message):
-        await self.bot.delete_message(message)
+    @command(p.string('!status'), master_only)
+    async def status(self, message):
+        status = message.clean_content[len('!status'):].strip()
+        await self.bot.change_status(Game(name=status))
+
+    @command(p.string('!name'), master_only)
+    async def name(self, message):
+        name = message.clean_content[len('!name'):].strip()
+        await self.bot.edit_profile(username=name)
 
     def permissions_in(self, channel):
         member = channel.server.get_member(self.bot.user.id)
