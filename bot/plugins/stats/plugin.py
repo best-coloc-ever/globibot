@@ -32,11 +32,9 @@ class Stats(Plugin):
                     game_timer = (member.game.name.lower(), now)
                     self.game_times_by_id[member.id] = game_timer
 
-        self.alive = True
         self.run_async(self.dump_periodically())
 
     def unload(self):
-        self.alive = False
         self.dump_all()
 
     async def on_member_update(self, before, after):
@@ -160,8 +158,4 @@ class Stats(Plugin):
     async def dump_periodically(self):
         while True:
             await asyncio.sleep(Stats.GAME_DUMP_INTERVAL)
-
-            if not self.alive:
-                break
-
             self.dump_all()
