@@ -202,7 +202,7 @@
         })
     }
 
-    this.onTwitchSwitch = () => {
+    this.onTwitchSwitch = (event) => {
       if (event.target.checked)
         this.connectTwitch()
       else
@@ -220,13 +220,13 @@
         })
     }
 
-    this.channelMention = name => () => {
+    this.channelMention = name => event => {
       API.twitchMention(name, event.target.checked)
         .then(data => {
 
         })
     }
-    this.channelWhisper = name => () => {
+    this.channelWhisper = name => event => {
       API.twitchWhisper(name, event.target.checked)
         .then(data => {
 
