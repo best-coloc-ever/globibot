@@ -94,9 +94,52 @@ class Twitter(Plugin):
         self.request_tokens = dict()
         self.last_tweets = dict()
 
+        self.interactive_tweets = dict()
 
     def unload(self):
         self.monitored.clear()
+
+    async def on_reaction_add(self, reaction, user):
+        try:
+            message = self.interactive_tweets[reaction.message.id]
+        except KeyError:
+            pass
+        else:
+            if reaction.emoji == '❤':
+                await self.twitter_three_legged_action(
+                    message,
+                    user,
+                    lambda api, tweet: api.favorites.create(_id=tweet['id']),
+                    'like',
+                )
+            elif reaction.emoji == '🔄':
+                await self.twitter_three_legged_action(
+                    message,
+                    user,
+                    lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
+                    'retweet',
+                )
+
+    async def on_reaction_remove(self, reaction, user):
+        try:
+            message = self.interactive_tweets[reaction.message.id]
+        except KeyError:
+            pass
+        else:
+            if reaction.emoji == '❤':
+                await self.twitter_three_legged_action(
+                    message,
+                    user,
+                    lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
+                    'unlike',
+                )
+            elif reaction.emoji == '🔄':
+                await self.twitter_three_legged_action(
+                    message,
+                    user,
+                    lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
+                    'unretweet',
+                )
 
     '''
     Commands
@@ -114,9 +157,9 @@ class Twitter(Plugin):
 
         if tweets:
             tweet = tweets[0]
-            m = await self.send_message(
+            m = await self.send_interactive_tweet(
                 message.channel,
-                format_tweet(tweet),
+                tweet,
                 delete_after=150
             )
             self.last_tweets[message.channel.id] = tweet
@@ -191,6 +234,7 @@ class Twitter(Plugin):
     async def like_tweet(self, message):
         await self.twitter_three_legged_action(
             message,
+            message.author,
             lambda api, tweet: api.favorites.create(_id=tweet['id']),
             'like',
         )
@@ -199,6 +243,7 @@ class Twitter(Plugin):
     async def unlike_tweet(self, message):
         await self.twitter_three_legged_action(
             message,
+            message.author,
             lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
             'unlike',
         )
@@ -207,6 +252,7 @@ class Twitter(Plugin):
     async def rt_tweet(self, message):
         await self.twitter_three_legged_action(
             message,
+            message.author,
             lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
             'retweet',
         )
@@ -215,6 +261,7 @@ class Twitter(Plugin):
     async def unrt_tweet(self, message):
         await self.twitter_three_legged_action(
             message,
+            message.author,
             lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
             'unretweet',
         )
@@ -230,6 +277,7 @@ class Twitter(Plugin):
 
         await self.twitter_three_legged_action(
             message,
+            message.author,
             lambda api, tweet: api.statuses.update(
                 status='@{} {}'.format(tweet['user']['screen_name'], reply),
                 in_reply_to_status_id=tweet['id'],
@@ -292,14 +340,24 @@ class Twitter(Plugin):
                 if latest['id'] != last_tweet['id']:
                     if tweet_time(latest) > tweet_time(last_tweet):
                         last_tweet = latest
-                        m = await self.send_message(
+                        m = await self.send_interactive_tweet(
                             server.default_channel,
-                            format_tweet(latest)
+                            latest
                         )
                         self.last_tweets[server.default_channel.id] = latest
                         self.run_async(self.update_tweet(latest, m))
 
         self.debug('No longer monitoring {}'.format(user_id))
+
+    async def send_interactive_tweet(self, channel, tweet, **kwargs):
+        message = await self.send_message(channel, format_tweet(tweet), **kwargs)
+
+        await self.bot.add_reaction(message, '🔄')
+        await self.bot.add_reaction(message, '❤')
+
+        self.interactive_tweets[message.id] = message
+
+        return message
 
     async def update_tweet(self, tweet, message):
         for i in range(12):
@@ -419,15 +477,15 @@ class Twitter(Plugin):
             'https://globibot.com/#connections to connect your Twitter acount'
         )
 
-    async def twitter_three_legged_action(self, message, action, description):
+    async def twitter_three_legged_action(self, message, user, action, description):
         try:
             tweet = self.last_tweets[message.channel.id]
         except KeyError:
             return
 
-        oauth_user = self.get_user_oauth(message.author)
+        oauth_user = self.get_user_oauth(user)
         if oauth_user is None:
-            await self.inform_user_about_connections(message.author)
+            await self.inform_user_about_connections(user)
             return
 
         user_api = self.get_user_api(oauth_user)
@@ -436,7 +494,7 @@ class Twitter(Plugin):
             action(user_api, tweet)
         except Exception as e:
             await self.send_message(
-                message.author,
+                user,
                 'I couldn\'t make you {} `{}`\'s tweet\n'
                 'Twitter said:\n{}'
                     .format(
@@ -450,7 +508,7 @@ class Twitter(Plugin):
                 message.channel,
                 '{} I made you {} `{}`\'s tweet 👍'
                     .format(
-                        message.author.mention,
+                        user.mention,
                         description,
                         tweet['user']['screen_name']
                     ),

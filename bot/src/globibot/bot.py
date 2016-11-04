@@ -97,6 +97,12 @@ class Globibot(DiscordClient):
     async def on_member_update(self, before, after):
         self._dispatch(Plugin.dispatch_member_update, before, after)
 
+    async def on_reaction_add(self, reaction, user):
+        self._dispatch(Plugin.dispatch_reaction_add, reaction, user)
+
+    async def on_reaction_remove(self, reaction, user):
+        self._dispatch(Plugin.dispatch_reaction_remove, reaction, user)
+
     async def _run_event(self, event, *args, **kwargs):
         try:
             self._dispatch(Plugin.dispatch_raw, event, *args, **kwargs)

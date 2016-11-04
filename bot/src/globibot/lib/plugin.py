@@ -143,6 +143,12 @@ class Plugin:
     async def dispatch_member_update(self, before, after):
         await self.on_member_update(before, after)
 
+    async def dispatch_reaction_add(self, reaction, user):
+        await self.on_reaction_add(reaction, user)
+
+    async def dispatch_reaction_remove(self, reaction, user):
+        await self.on_reaction_remove(reaction, user)
+
     async def dispatch_raw(self, event, *args, **kwargs):
         await self.on_raw_event(event, *args, **kwargs)
 
@@ -156,6 +162,12 @@ class Plugin:
         pass
 
     async def on_member_update(self, before, after):
+        pass
+
+    async def on_reaction_add(self, reaction, user):
+        pass
+
+    async def on_reaction_remove(self, reaction, user):
         pass
 
     async def on_raw_event(self, event, *args, **kwargs):
@@ -199,7 +211,7 @@ class Plugin:
 
     async def _send(self, method, *args, **kwargs):
         try:
-            content = kwargs['content']
+            content = '**<__DEV BOT__>**\n{}'.format(kwargs['content'])
             kwargs['content'] = f.truncated_content(content)
         except KeyError:
             pass
