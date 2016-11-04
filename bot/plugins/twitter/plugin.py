@@ -45,8 +45,6 @@ def format_tweet(tweet):
         '{text}\n'
         '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
         '**__source__: {tweet_link}**\n\n'
-        '🆕 *You can use `!like` to like the tweet or `!rt` to retweet it*\n'
-        '*also available: `!unlike` `!unrt` `!reply`*'
     ).format(
         screen_name = screen_name,
         text        = f.code_block(tweet['text']),
