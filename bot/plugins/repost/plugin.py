@@ -23,6 +23,8 @@ class Repost(Plugin):
         for url in URL_PATTERN.findall(message.content):
             try:
                 author_id, stamp = self.links[message.server.id][url]
+                for emoji in ['🔔', '🇷', '🇪', '🇵', '🇴', '🇸', '🇹']:
+                    await self.bot.add_reaction(message, emoji)
                 self.shames[message.server.id][message.author.id].append((url, time()))
             except KeyError:
                 self.links[message.server.id][url] = (message.author.id, time())
