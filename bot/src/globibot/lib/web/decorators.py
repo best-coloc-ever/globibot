@@ -77,3 +77,13 @@ def with_body_arguments(*parameter_names):
         return call
 
     return wrapped
+
+import asyncio
+
+def async_handler(fn):
+
+    async def wrapped(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.create_task(fn(*args, **kwargs))
+
+    return wrapped

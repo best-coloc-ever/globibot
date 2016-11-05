@@ -1,6 +1,6 @@
 from globibot.lib.web.handlers import ContextHandler
 from globibot.lib.web.constants import USER_COOKIE_NAME
-from globibot.lib.web.decorators import with_body_arguments
+from globibot.lib.web.decorators import with_body_arguments, async_handler
 from globibot.lib.transaction import Transaction
 
 from . import queries as q
@@ -86,7 +86,7 @@ class LoginHandler(ContextHandler):
 class RegistrationHandler(ContextHandler):
 
     @with_body_arguments('user', 'token', 'password')
-    async def post(self, user, token, password):
+    def post(self, user, token, password):
         if tokenCache.get(user) != token:
             self.set_status(HTTPStatus.BAD_REQUEST)
             self.write('Invalid token')
@@ -104,6 +104,7 @@ class RegistrationHandler(ContextHandler):
 
 class RegistrationTokenHandler(ContextHandler):
 
+    @async_handler
     async def post(self, user_id):
         user = self.bot.find_user(user_id)
 
