@@ -10,6 +10,7 @@ class TokenType:
     Float = 'FLOAT'
     Mention = 'MENTION'
     Channel = 'CHANNEL'
+    Emoji = 'EMOJI'
     Snippet = 'SNIPPET'
     Word = 'WORD'
 
@@ -19,6 +20,7 @@ TOKEN_SPEC = [
     (TokenType.Integer, (r'[+-]?[0-9]+',)),
     (TokenType.Mention, (r'<@!?[0-9]+>',)),
     (TokenType.Channel, (r'<#[0-9]+>',)),
+    (TokenType.Emoji,   (r'<:\S+:[0-9]+>',)),
     (TokenType.Snippet, (r'```\S+\n(.*?)```', DOTALL)),
     (TokenType.Word,    (r'\S+',)), # Word is currently a catch-all
 ]
@@ -46,6 +48,11 @@ def extract_mention_id(tok):
 
 def extract_channel_id(tok):
     return int(tok.value[2:-1])
+
+def extract_emoji_id(tok):
+    start_idx = tok.value.rfind(':') + 1
+    end_idx = tok.value.rfind('>')
+    return int(tok.value[start_idx:end_idx])
 
 Snippet = namedtuple('Snippet', ['language', 'code'])
 def extract_snippet(tok):
@@ -101,6 +108,7 @@ number  = (
 word    = (some_type(TokenType.Word)    >> to_s)               .named('W')
 mention = (some_type(TokenType.Mention) >> extract_mention_id) .named('M')
 channel = (some_type(TokenType.Channel) >> extract_channel_id) .named('C')
+emoji   = (some_type(TokenType.Emoji)   >> extract_emoji_id)   .named('E')
 snippet = (some_type(TokenType.Snippet) >> extract_snippet)    .named('S')
 
 # High level helpers
