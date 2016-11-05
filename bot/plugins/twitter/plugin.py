@@ -36,6 +36,8 @@ tweet_time = lambda tweet: datetime.strptime(
     '%a %b %d %H:%M:%S +0000 %Y'
 )
 
+TWITTER_STATUS_PATTERN = re.compile(r'http[s]?://twitter.com/\S+/status/(?P<status_id>\d+)')
+
 def format_tweet(tweet):
     time_difference = datetime.now() - tweet_time(tweet)
 
@@ -45,6 +47,7 @@ def format_tweet(tweet):
         '{text}\n'
         '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
         '**__source__: {tweet_link}**\n\n'
+        '*Click on the reactions below to retweet or like the tweet*'
     ).format(
         screen_name = screen_name,
         text        = f.code_block(tweet['text']),
@@ -99,45 +102,38 @@ class Twitter(Plugin):
 
     async def on_reaction_add(self, reaction, user):
         try:
-            message = self.interactive_tweets[reaction.message.id]
+            tweet = self.interactive_tweets[reaction.message.id]
         except KeyError:
             pass
         else:
             if reaction.emoji == '❤':
-                await self.twitter_three_legged_action(
-                    message,
-                    user,
-                    lambda api, tweet: api.favorites.create(_id=tweet['id']),
-                    'like',
-                )
+                await self.like_tweet(tweet, reaction.message.channel, user)
             elif reaction.emoji == '🔄':
-                await self.twitter_three_legged_action(
-                    message,
-                    user,
-                    lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
-                    'retweet',
-                )
+                await self.rt_tweet(tweet, reaction.message.channel, user)
 
     async def on_reaction_remove(self, reaction, user):
         try:
-            message = self.interactive_tweets[reaction.message.id]
+            tweet = self.interactive_tweets[reaction.message.id]
         except KeyError:
             pass
         else:
             if reaction.emoji == '❤':
-                await self.twitter_three_legged_action(
-                    message,
-                    user,
-                    lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
-                    'unlike',
-                )
+                await self.unlike_tweet(tweet, reaction.message.channel, user)
             elif reaction.emoji == '🔄':
-                await self.twitter_three_legged_action(
-                    message,
-                    user,
-                    lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
-                    'unretweet',
+                await self.unrt_tweet(tweet, reaction.message.channel, user)
+
+    async def on_new(self, message):
+        for match in TWITTER_STATUS_PATTERN.finditer(message.clean_content):
+            status_id = match.group('status_id')
+            tweet = self.client.statuses.show(id=status_id)
+            if tweet:
+                m = await self.send_message(
+                    message.channel,
+                    '*Click on the reactions below to retweet or like the tweet from `{}`*'
+                        .format(tweet['user']['screen_name'])
                 )
+
+                await self.set_interactive_tweet(tweet, m)
 
     '''
     Commands
@@ -229,60 +225,64 @@ class Twitter(Plugin):
             )
 
     @command(p.string('!like'))
-    async def like_tweet(self, message):
-        await self.twitter_three_legged_action(
-            message,
-            message.author,
-            lambda api, tweet: api.favorites.create(_id=tweet['id']),
-            'like',
-        )
+    async def like_tweet_command(self, message):
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            await self.like_tweet(tweet, message.channel, message.author)
 
     @command(p.string('!unlike'))
-    async def unlike_tweet(self, message):
-        await self.twitter_three_legged_action(
-            message,
-            message.author,
-            lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
-            'unlike',
-        )
+    async def unlike_tweet_command(self, message):
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            await self.unlike_tweet(tweet, message.channel, message.author)
 
     @command(p.string('!rt'))
-    async def rt_tweet(self, message):
-        await self.twitter_three_legged_action(
-            message,
-            message.author,
-            lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
-            'retweet',
-        )
+    async def rt_tweet_command(self, message):
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            await self.rt_tweet(tweet, message.channel, message.author)
 
     @command(p.string('!unrt'))
-    async def unrt_tweet(self, message):
-        await self.twitter_three_legged_action(
-            message,
-            message.author,
-            lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
-            'unretweet',
-        )
+    async def unrt_tweet_command(self, message):
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            await self.unrt_tweet(tweet, message.channel, message.author)
 
     @command(p.string('!reply'))
     async def reply_tweet(self, message):
-        # Replace emojis to avoid weird moon runes
-        reply = re.sub(
-            r'<:(.*):[0-9]+>',
-            r'\1',
-            message.clean_content[len('!reply'):].strip()
-        )
+        try:
+            tweet = self.last_tweets[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            # Replace emojis to avoid weird moon runes
+            reply = re.sub(
+                r'<:(.*):[0-9]+>',
+                r'\1',
+                message.clean_content[len('!reply'):].strip()
+            )
 
-        await self.twitter_three_legged_action(
-            message,
-            message.author,
-            lambda api, tweet: api.statuses.update(
-                status='@{} {}'.format(tweet['user']['screen_name'], reply),
-                in_reply_to_status_id=tweet['id'],
-                _method='POST'
-            ),
-            'reply to',
-        )
+            await self.twitter_three_legged_action(
+                tweet, message.channel, message.author,
+                lambda api, tweet: api.statuses.update(
+                    status='@{} {}'.format(tweet['user']['screen_name'], reply),
+                    in_reply_to_status_id=tweet['id'],
+                    _method='POST'
+                ),
+                'reply to',
+            )
 
     '''
     Details
@@ -350,12 +350,15 @@ class Twitter(Plugin):
     async def send_interactive_tweet(self, channel, tweet, **kwargs):
         message = await self.send_message(channel, format_tweet(tweet), **kwargs)
 
+        await self.set_interactive_tweet(tweet, message)
+
+        return message
+
+    async def set_interactive_tweet(self, tweet, message):
         await self.bot.add_reaction(message, '🔄')
         await self.bot.add_reaction(message, '❤')
 
-        self.interactive_tweets[message.id] = message
-
-        return message
+        self.interactive_tweets[message.id] = tweet
 
     async def update_tweet(self, tweet, message):
         for i in range(12):
@@ -465,6 +468,34 @@ class Twitter(Plugin):
 
         return TwitterAPI(auth = oauth)
 
+    async def like_tweet(self, tweet, channel, user):
+        await self.twitter_three_legged_action(
+            tweet, channel, user,
+            lambda api, tweet: api.favorites.create(_id=tweet['id']),
+            'like',
+        )
+
+    async def unlike_tweet(self, tweet, channel, user):
+        await self.twitter_three_legged_action(
+            tweet, channel, user,
+            lambda api, tweet: api.favorites.destroy(_id=tweet['id']),
+            'unlike',
+        )
+
+    async def rt_tweet(self, tweet, channel, user):
+        await self.twitter_three_legged_action(
+            tweet, channel, user,
+            lambda api, tweet: api.statuses.retweet(id=tweet['id'], _method='POST'),
+            'retweet',
+        )
+
+    async def unrt_tweet(self, tweet, channel, user):
+        await self.twitter_three_legged_action(
+            tweet, channel, user,
+            lambda api, tweet: api.statuses.unretweet(id=tweet['id'], _method='POST'),
+            'unretweet',
+        )
+
     async def inform_user_about_connections(self, user):
         await self.send_message(
             user,
@@ -475,13 +506,9 @@ class Twitter(Plugin):
             'https://globibot.com/#connections to connect your Twitter acount'
         )
 
-    async def twitter_three_legged_action(self, message, user, action, description):
-        try:
-            tweet = self.last_tweets[message.channel.id]
-        except KeyError:
-            return
-
+    async def twitter_three_legged_action(self, tweet, channel, user, action, description):
         oauth_user = self.get_user_oauth(user)
+
         if oauth_user is None:
             await self.inform_user_about_connections(user)
             return
@@ -503,7 +530,7 @@ class Twitter(Plugin):
             )
         else:
             await self.send_message(
-                message.channel,
+                channel,
                 '{} I made you {} `{}`\'s tweet 👍'
                     .format(
                         user.mention,
