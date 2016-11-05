@@ -22,3 +22,11 @@ top_games = '''
         order by    sum(duration) desc
         limit       %(limit)s
 '''
+
+top_users = '''
+    select          author_id, duration
+        from        game_played_time
+        where       name = %(name)s
+        order by    duration desc
+        limit       %(limit)s
+'''

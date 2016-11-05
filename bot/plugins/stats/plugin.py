@@ -10,6 +10,8 @@ from . import queries as q
 from collections import namedtuple
 from time import time
 
+from .handlers import GamesTopHandler, GameStatsHandler, GameUserHandler
+
 import asyncio
 
 GamePlayed = namedtuple(
@@ -22,6 +24,14 @@ class Stats(Plugin):
     GAME_DUMP_INTERVAL = 60 * 10
 
     def load(self):
+        context = dict(bot=self.bot, plugin=self)
+
+        self.add_web_handlers(
+            (r'/stats/games/top', GamesTopHandler, context),
+            (r'/stats/games/game', GameStatsHandler, context),
+            (r'/stats/games/user/(?P<user_id>\d+)', GameUserHandler, context),
+        )
+
         self.game_times_by_id = dict()
 
         now = time()
@@ -111,6 +121,15 @@ class Stats(Plugin):
             trans.execute(q.top_games, dict(
                 limit = count,
                 authors_id = user_ids
+            ))
+
+            return trans.fetchall()
+
+    def top_users(self, game, count):
+        with self.transaction() as trans:
+            trans.execute(q.top_users, dict(
+                name = game,
+                limit = count
             ))
 
             return trans.fetchall()

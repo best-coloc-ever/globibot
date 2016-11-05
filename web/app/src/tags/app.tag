@@ -51,6 +51,13 @@
       riot.route('/dj-admin', ()        => { this.setView('dj-admin-view') })
       riot.route('/dj',       ()        => { this.setView('dj-view') })
       riot.route('/connections', ()        => { this.setView('connections-view') })
+      riot.route('/game-stats', ()        => { this.setView('game-stats-view') })
+      riot.route('/game-stats/game/*', (game)        => {
+        this.setView('game-stats-game-view', true, { game: game })
+      })
+      riot.route('/game-stats/user/*', (userId)        => {
+        this.setView('game-stats-user-view', true, { userId: userId })
+      })
 
       riot.route.start(true)
 

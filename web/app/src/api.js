@@ -36,6 +36,12 @@ class API {
     return API.jsonCall('/twitch/whisper', { body: form, method: 'POST' })
   }
 
+  static gameStats() { return API.jsonCall('/stats/games/top') }
+  static gameStatsGame(gameName) {
+    return API.jsonCall(`/stats/games/game?name=${encodeURIComponent(gameName)}`)
+  }
+  static gameStatsUser(userId) { return API.jsonCall(`/stats/games/user/${userId}`) }
+
   static giveawayStart(serverId, title, content) {
     let form = new FormData
 
