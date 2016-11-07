@@ -38,6 +38,14 @@ tweet_time = lambda tweet: datetime.strptime(
 
 TWITTER_STATUS_PATTERN = re.compile(r'http[s]?://twitter.com/\S+/status/(?P<status_id>\d+)')
 
+PAST_FORMS = {
+    'like':      'liked',
+    'unlike':    'unliked',
+    'retweet':   'retweeted',
+    'unretweet': 'unretweeted',
+    'reply to':  'replied to'
+}
+
 def format_tweet(tweet):
     time_difference = datetime.now() - tweet_time(tweet)
 
@@ -520,21 +528,21 @@ class Twitter(Plugin):
         except Exception as e:
             await self.send_message(
                 user,
-                'I couldn\'t make you {} `{}`\'s tweet\n'
+                'I couldn\'t {} `{}`\'s tweet for you\n'
                 'Twitter said:\n{}'
                     .format(
-                        tweet['user']['screen_name'],
                         description,
+                        tweet['user']['screen_name'],
                         f.code_block(str(e.response_data))
                     )
             )
         else:
             await self.send_message(
                 channel,
-                '{} I made you {} `{}`\'s tweet 👍'
+                '{} I {} `{}`\'s tweet for you 👍'
                     .format(
                         user.mention,
-                        description,
+                        PAST_FORMS[description],
                         tweet['user']['screen_name']
                     ),
                 delete_after = 5
