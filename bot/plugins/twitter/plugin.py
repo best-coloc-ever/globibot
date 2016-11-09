@@ -135,13 +135,7 @@ class Twitter(Plugin):
             status_id = match.group('status_id')
             tweet = self.client.statuses.show(id=status_id)
             if tweet:
-                m = await self.send_message(
-                    message.channel,
-                    '*Click on the reactions below to retweet or like the tweet from `{}`*'
-                        .format(tweet['user']['screen_name'])
-                )
-
-                await self.set_interactive_tweet(tweet, m)
+                await self.set_interactive_tweet(tweet, message)
 
     '''
     Commands
