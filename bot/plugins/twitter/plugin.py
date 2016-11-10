@@ -65,16 +65,6 @@ def format_tweet(tweet):
         tweet_link  = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id'])
     )
 
-    try:
-        entities = tweet['extended_entities']['media']
-        media_urls = [entity['media_url_https'] for entity in entities]
-        text += (
-            '\n\nMedia files attached in the tweet:\n{}'
-                .format('\n'.join(media_urls))
-        )
-    except:
-        pass
-
     return text
 
 class Twitter(Plugin):
@@ -353,6 +343,7 @@ class Twitter(Plugin):
         message = await self.send_message(channel, format_tweet(tweet), **kwargs)
 
         await self.set_interactive_tweet(tweet, message)
+        await self.send_attachments(channel, tweet)
 
         return message
 
@@ -469,6 +460,19 @@ class Twitter(Plugin):
         )
 
         return TwitterAPI(auth = oauth)
+
+    async def send_attachments(self, channel, tweet):
+        try:
+            entities = tweet['extended_entities']['media']
+            media_urls = [entity['media_url_https'] for entity in entities]
+        except:
+            pass
+        else:
+            text = (
+                '\n\nMedia files attached in the tweet:\n{}'
+                    .format('\n'.join(media_urls))
+            )
+            await self.send_message(channel, text)
 
     async def like_tweet(self, tweet, channel, user):
         await self.twitter_three_legged_action(
