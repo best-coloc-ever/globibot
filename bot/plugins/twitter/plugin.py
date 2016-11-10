@@ -125,6 +125,7 @@ class Twitter(Plugin):
             status_id = match.group('status_id')
             tweet = self.client.statuses.show(id=status_id)
             if tweet:
+                await asyncio.sleep(2)
                 await self.set_interactive_tweet(tweet, message)
 
     '''
