@@ -1,6 +1,8 @@
 var webpack = require('webpack')
 var CopyWebpackPlugin = require('copy-webpack-plugin')
 
+var path = require('path')
+
 module.exports = {
   entry: {
     app: './src/index.js',
@@ -10,6 +12,10 @@ module.exports = {
   output: {
     path: '/dist',
     filename: 'bundle.js'
+  },
+
+  resolve: {
+    root: [ path.resolve('./src') ]
   },
 
   module: {

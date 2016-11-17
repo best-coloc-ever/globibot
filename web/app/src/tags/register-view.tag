@@ -10,7 +10,7 @@
         <div class="mdl-cell mdl-cell--4-col"></div>
         <div class="mdl-cell mdl-cell--4-col mdl-textfield mdl-js-textfield">
           <input class="mdl-textfield__input" type="text" id="username" onkeyup={ searchUsername }>
-          <label class="mdl-textfield__label" for="username">Your Discord username</label>
+          <label class="mdl-textfield__label" for="username">Your current Discord username</label>
         </div>
         <div class="mdl-cell mdl-cell--1-col hv-center" show={ searchingUsername }>
           <div class="mdl-spinner mdl-js-spinner is-active"></div>
@@ -71,12 +71,27 @@
 
       </div>
 
+      <div class="mdl-grid">
+        <div class="mdl-layout-spacer"></div>
+        <div class="mdl-cell mdl-cell--4-col justify">
+          <div>
+          Please note that you must share at least one server with Globibot.
+          If you currently don't, you can always join the test server below
+          </div>
+          <iframe src="https://discordapp.com/widget?id=143032611814637568&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0"></iframe>
+        </div>
+        <div class="mdl-layout-spacer"></div>
+      </div>
+
     </div>
 
     </div>
   </div>
 
   <style scoped>
+    .justify {
+      text-align: justify;
+    }
     h6 {
       margin-right: 20px;
     }

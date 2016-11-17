@@ -4,30 +4,46 @@
 
     <h5 align="center">Login</h5>
 
-    <div style="text-align:center;" >
+    <div>
 
-      <div class="md-grid">
-        <div class="md-cell mdl-textfield mdl-js-textfield">
-          <input class="mdl-textfield__input" type="text" id="username">
-          <label class="mdl-textfield__label" for="username">Username...</label>
+      <form action="#" onsubmit={ finishLogin }>
+        <div class="mdl-grid">
+          <div class="mdl-cell mdl-cell--4-col"></div>
+          <div class="mdl-cell mdl-cell--4-col mdl-textfield mdl-js-textfield">
+            <input class="mdl-textfield__input" type="text" id="username">
+            <label class="mdl-textfield__label" for="username">Username...</label>
+          </div>
+          <div class="mdl-cell mdl-cell--1-col info">
+            <i class="material-icons" id="login-tt" tabindex="-1">info_outline</i>
+            <div class="mdl-tooltip" data-mdl-for="login-tt">
+              Your <span class="important">current</span> Discord username
+            </div>
+          </div>
+          <div class="mdl-cell mdl-cell--3-col"></div>
         </div>
-      </div>
 
-      <div class="md-grid">
-        <div class="md-cell mdl-textfield mdl-js-textfield">
-          <input class="mdl-textfield__input" type="password" id="password">
-          <label class="mdl-textfield__label" for="password">Password...</label>
+        <div class="mdl-grid">
+          <div class="mdl-layout-spacer"></div>
+          <div class="mdl-cell mdl-cell--4-col mdl-textfield mdl-js-textfield">
+            <input class="mdl-textfield__input" type="password" id="password">
+            <label class="mdl-textfield__label" for="password">Password...</label>
+          </div>
+          <div class="mdl-layout-spacer"></div>
         </div>
-      </div>
 
-      <div class="md-grid">
-        <button class="mdl-button mdl-js-button mdl-button--colored mdl-button--raised" onclick={ finishLogin }>
-          Let's go
-        </button>
-      </div>
+        <div class="mdl-grid">
+          <div class="mdl-layout-spacer"></div>
+          <button class="mdl-button mdl-js-button mdl-button--colored mdl-button--raised">
+            Let's go
+          </button>
+          <div class="mdl-layout-spacer"></div>
+        </div>
+      </form>
 
-      <div class="md-grid" style="text-align: right">
+      <div class="mdl-grid">
+        <div class="mdl-layout-spacer"></div>
         <h6>New to this ? <a href="#register">Register first</a></h6>
+        <div class="mdl-layout-spacer"></div>
       </div>
 
       <div class="mdl-snackbar mdl-js-snackbar" id="token-snackbar">
@@ -41,9 +57,18 @@
   </div>
 
   <style scoped>
-    h6 {
-      margin-right: 20px;
+    .important {
+      font-size: larger;
+      font-weight: bold;
+      color: yellow;
     }
+
+    .info {
+      padding-top: 20px;
+      color: rgba(0, 0, 0, .25);
+      cursor: default;
+    }
+
     button a {
       color: white;
       text-decoration: none;
@@ -80,6 +105,8 @@
             snackbar.MaterialSnackbar.showSnackbar(data)
           }
         })
+
+      return false
     }
   </script>
 
