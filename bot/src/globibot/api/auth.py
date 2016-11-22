@@ -72,16 +72,19 @@ class LoginHandler(ContextHandler):
 
     @with_body_arguments('user', 'password')
     def post(self, user, password):
-        user = self.bot.find_user_by_name(user)
+        users = self.bot.find_users_by_name(user)
 
-        if user and check_credentials_for(user, password, self.bot.db):
-            self.set_secure_cookie(
-                USER_COOKIE_NAME,
-                user.id,
-                expires_days=c.SESSION_COOKIE_DURATION
-            )
-        else:
-            self.set_status(HTTPStatus.BAD_REQUEST)
+        if users:
+            for user in users:
+                if check_credentials_for(user, password, self.bot.db):
+                    self.set_secure_cookie(
+                        USER_COOKIE_NAME,
+                        user.id,
+                        expires_days=c.SESSION_COOKIE_DURATION
+                    )
+                    return
+
+        self.set_status(HTTPStatus.BAD_REQUEST)
 
 class RegistrationHandler(ContextHandler):
 

@@ -32,8 +32,8 @@ class UserFindHandler(ContextHandler):
     @respond_json
     @with_query_parameters('user_name')
     def get(self, user_name):
-        user = self.bot.find_user_by_name(user_name)
-        if user:
-            return user_data(user)
+        users = self.bot.find_users_by_name(user_name)
+        if users:
+            return [user_data(user) for user in users]
         else:
             self.set_status(HTTPStatus.BAD_REQUEST)

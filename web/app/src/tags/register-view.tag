@@ -22,8 +22,8 @@
       </div>
 
       <div class="mdl-grid" show={ usernameValidated }>
-        <div class="mdl-cell mdl-cell--col-4"></div>
-        <div class="mdl-cell mdl-cell--col-4">
+        <div class="mdl-layout-spacer"></div>
+        <div class="mdl-cell mdl-cell--col-1" each={ user in users }>
           <div class="mdl-grid hv-center">
             Hi { user.name }, is this you ?
           </div>
@@ -31,16 +31,19 @@
             <img src={ user.avatar_url }>
           </div>
           <div class="mdl-grid hv-center">
-            <button class="mdl-button mdl-js-button mdl-button--colored mdl-button--raised" onclick={ sendToken }>
+            <button class="mdl-button mdl-js-button mdl-button--colored mdl-button--raised" onclick={ sendToken(user) }>
               Yes that's me 👍
             </button>
-            <div class="mdl-snackbar mdl-js-snackbar" id="token-snackbar">
-              <div class="mdl-snackbar__text"></div>
-              <button class="mdl-snackbar__action" show={ false }></button>
-            </div>
           </div>
         </div>
+        <div class="mdl-layout-spacer"></div>
+        <div class="mdl-snackbar mdl-js-snackbar" id="token-snackbar">
+          <div class="mdl-snackbar__text"></div>
+          <button class="mdl-snackbar__action" show={ false }></button>
+        </div>
       </div>
+
+      <div class="hv-center" show={ usernameValidated && users.length > 1 }>You don't seem to be very original with your name...</div>
 
       <div show={ tokenSent }>
         <div class="mdl-grid">
@@ -110,6 +113,7 @@
     this.usernameValidated = null
     this.searchingUsername = false
     this.tokenSent = false
+    this.users = null
     this.user = null
 
     this.on('mount', () => { componentHandler.upgradeElements(this.root) })
@@ -134,7 +138,7 @@
             else {
               this.usernameValidated = true
               response.json().then(j => {
-                self.user = j
+                self.users = j
                 self.update()
               })
             }
@@ -143,8 +147,9 @@
       }, 500)
     }
 
-    this.sendToken = (event) => {
-      fetch('/bot/api/send-registration-token/' + self.user.id, { method: 'POST' })
+    this.sendToken = user => (event) => {
+      this.user = user
+      fetch('/bot/api/send-registration-token/' + user.id, { method: 'POST' })
         .then(response => {
           self.tokenSent = true
 

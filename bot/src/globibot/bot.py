@@ -145,6 +145,13 @@ class Globibot(DiscordClient):
                 if user.name.lower() == user_name.lower():
                     return user
 
+    def find_users_by_name(self, user_name):
+        return list(set([
+            user for server in self.servers
+            for user in server.members
+            if user.name.lower() == user_name.lower()
+        ]))
+
     def find_server(self, server_id):
         return next(
             (server for server in self.servers if server.id == server_id),
