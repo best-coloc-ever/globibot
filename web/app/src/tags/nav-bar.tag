@@ -54,6 +54,11 @@
       <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">link</i>Connections
     </a>
 
+    <hr>
+
+    <button class="mdl-button mdl-js-button mdl-button--colored mdl-button--raised" onclick={ redirectAuthorize }>
+    Add me to your server
+    </button>
   </nav>
 
   <style scoped>
@@ -79,6 +84,11 @@
     this.logsWSConnected = false
 
     this.logout = () => { riot.route('/logout') }
+
+    this.redirectAuthorize = () => {
+      let url = `https://discordapp.com/api/oauth2/authorize?client_id=${APP_CLIENT_ID}&scope=bot&permissions=0`
+      window.location = url
+    }
 
     this.app.on('credential-changed', () => {
       if (this.app.user) {

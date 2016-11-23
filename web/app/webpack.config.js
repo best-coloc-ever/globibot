@@ -43,6 +43,9 @@ module.exports = {
       { from: 'index.html' },
       { from: 'styles.css' },
       { from: 'favicon.png' },
-    ])
+    ]),
+    new webpack.DefinePlugin({
+      APP_CLIENT_ID: JSON.stringify(process.env.APP_CLIENT_ID),
+    })
   ]
 };

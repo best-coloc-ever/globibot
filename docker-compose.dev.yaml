@@ -30,3 +30,5 @@ services:
     ports:
       # Exposing port for browser-sync
       - '3000:3000'
+    environment:
+      APP_CLIENT_ID: ${APP_CLIENT_ID}

@@ -33,10 +33,10 @@ class Globibot(DiscordClient):
             self.config.get(c.MASTER_IDS_KEY, [])
         ]
 
-        self.enabled_servers = [
-            str(id) for id in
-            self.config.get(c.ENABLED_SERVERS_KEY, [])
-        ]
+        # self.enabled_servers = [
+        #     str(id) for id in
+        #     self.config.get(c.ENABLED_SERVERS_KEY, [])
+        # ]
 
         self.web.add_routes('bot', *api.routes(self))
 
@@ -196,8 +196,8 @@ class Globibot(DiscordClient):
             return
 
         # Filtering servers
-        if message.server and message.server.id not in self.enabled_servers:
-            return
+        # if message.server and message.server.id not in self.enabled_servers:
+            # return
 
         self._dispatch(plugin_action, message, *args)
 

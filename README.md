@@ -20,10 +20,6 @@ bot:
     some_other_plugin_with_conf:
       conf_key: 'conf value'
 
-  # Server named on which Globibot will process messages
-  servers:
-    - 'Some server name'
-
   # Ids of people able to use "master commands"
   masters:
     - 'Some snowflake id for a discord account'
@@ -77,7 +73,7 @@ plugin_cls = Foo
 
 In `./bot/plugins/foo/foo_plugin.py`:
 ```python
-from bot.lib.plugin import Plugin
+from globibot.lib.plugin import Plugin
 
 class Foo(Plugin):
     pass
@@ -98,9 +94,9 @@ bot:
 
 Now if you start/restart the bot:
 ```sh
-docker-compose up -d bot # To start the bot
+./script/dev up -d bot # To start the bot
 # Or
-docker-compose restart -t 0 bot # To restart the bot
+./script/dev restart -t 0 bot # To restart the bot
 ```
 
 You should see in the logs that Globibot loaded your plugin:
