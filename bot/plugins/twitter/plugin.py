@@ -14,9 +14,12 @@ from .handlers import OAuthTokenHandler, OAuthAuthorizeHandler, \
 from twitter import Twitter as TwitterAPI
 from twitter import OAuth
 
+from random import randint
 from humanize import naturaltime
 from datetime import datetime
 from collections import namedtuple
+
+from discord import Embed, Color
 
 import asyncio
 import re
@@ -46,26 +49,29 @@ PAST_FORMS = {
     'reply to':  'replied to'
 }
 
-def format_tweet(tweet):
-    time_difference = datetime.now() - tweet_time(tweet)
-
+def tweet_embed(tweet):
     screen_name = tweet['user']['screen_name']
-    text = (
-        'Last tweet from `@{screen_name}` ({ago}):\n\n'
-        '{text}\n'
-        '🔄 **{retweets}**    ❤ **{favourites}**\n\n'
-        '**__source__: {tweet_link}**\n\n'
-        '*Click on the reactions below to retweet or like the tweet*'
-    ).format(
-        screen_name = screen_name,
-        text        = f.code_block(tweet['text']),
-        retweets    = tweet['retweet_count'],
-        favourites  = tweet['favorite_count'],
-        ago         = naturaltime(time_difference),
-        tweet_link  = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id'])
-    )
 
-    return text
+    embed = Embed(
+        title       = 'Latest tweet from {}'.format(screen_name),
+        description = tweet['text'],
+        url         = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id']),
+    )
+    embed.colour = randint(0, 0xffffff)
+    embed.timestamp = tweet_time(tweet)
+    embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
+    embed.provider.name = 'Twitter'
+    embed.provider.url = 'https://twitter.com'
+
+    try:
+        entities = tweet['extended_entities']['media']
+        media_urls = [entity['media_url_https'] for entity in entities]
+    except:
+        pass
+    else:
+        embed.set_image(url=media_urls[0])
+
+    return embed
 
 class Twitter(Plugin):
 
@@ -341,10 +347,9 @@ class Twitter(Plugin):
         self.debug('No longer monitoring {}'.format(user_id))
 
     async def send_interactive_tweet(self, channel, tweet, **kwargs):
-        message = await self.send_message(channel, format_tweet(tweet), **kwargs)
+        message = await self.send_message(channel, '', embed=tweet_embed(tweet), **kwargs)
 
         await self.set_interactive_tweet(tweet, message)
-        await self.send_attachments(channel, tweet)
 
         return message
 
@@ -355,11 +360,11 @@ class Twitter(Plugin):
         self.interactive_tweets[message.id] = tweet
 
     async def update_tweet(self, tweet, message):
-        for i in range(12):
-            await asyncio.sleep(10)
+        for i in range(10):
+            await asyncio.sleep(20)
             try:
                 tweet = self.client.statuses.show(id=tweet['id'])
-                await self.edit_message(message, format_tweet(tweet))
+                await self.edit_message(message, '', embed=tweet_embed(tweet))
             except Exception as e:
                 self.error(e)
                 pass
@@ -461,19 +466,6 @@ class Twitter(Plugin):
         )
 
         return TwitterAPI(auth = oauth)
-
-    async def send_attachments(self, channel, tweet):
-        try:
-            entities = tweet['extended_entities']['media']
-            media_urls = [entity['media_url_https'] for entity in entities]
-        except:
-            pass
-        else:
-            text = (
-                '\n\nMedia files attached in the tweet:\n{}'
-                    .format('\n'.join(media_urls))
-            )
-            await self.send_message(channel, text)
 
     async def like_tweet(self, tweet, channel, user):
         await self.twitter_three_legged_action(
