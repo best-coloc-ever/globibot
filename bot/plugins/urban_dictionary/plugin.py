@@ -13,7 +13,9 @@ from random import randint
 
 from discord import Embed
 
-def definition_embed(definition):
+def definition_embed(definitions, index):
+    definition = definitions[index]
+
     embed = Embed(
         title       = 'Definition',
         description = definition['definition']
@@ -34,6 +36,8 @@ def definition_embed(definition):
         )
     )
 
+    embed.set_footer(text='definition {} / {}'.format(index + 1, len(definitions)))
+
     embed.color = randint(0, 0xffffff)
 
     return embed
@@ -45,19 +49,63 @@ class UrbanDictionary(Plugin):
 
         self.client = AsyncHTTPClient()
 
+        self.definitions_by_message = dict()
+
+    async def on_reaction_add(self, reaction, user):
+        if user == self.bot.user:
+            return
+
+        show_prev = (reaction.emoji == '⬅')
+        show_next = (reaction.emoji == '➡')
+
+        if not show_prev and not show_next:
+            return
+
+        message = reaction.message
+
+        try:
+            (definitions, index) = self.definitions_by_message[message.id]
+        except KeyError:
+            pass
+        else:
+            new_index = index + 1 if show_next else index - 1
+
+            if new_index < 0 or new_index >= len(definitions):
+                return
+
+            new_embed = definition_embed(definitions, new_index)
+
+            await self.bot.clear_reactions(message)
+            await self.bot.edit_message(message, '', embed=new_embed)
+
+            self.definitions_by_message[message.id] = (definitions, new_index)
+
+            if new_index > 0:
+                await self.bot.add_reaction(message, '⬅')
+            if new_index < (len(definitions) - 1):
+                await self.bot.add_reaction(message, '➡')
+
     @command(p.string('!define') + p.bind(p.word, 'term'), global_cooldown(30))
     async def define_word_command(self, message, term):
         definitions = await self.fetch_definitions(term)
 
         if definitions:
             by_thumbs_up = lambda d: d['thumbs_up']
-            best_definition = sorted(definitions, key=by_thumbs_up)[-1]
+            sorted_definitions = sorted(definitions, key=by_thumbs_up, reverse=True)
 
-            await self.send_message(
+            message = await self.send_message(
                 message.channel, '',
-                embed        = definition_embed(best_definition),
-                delete_after = 60
+                embed        = definition_embed(sorted_definitions, 0),
+                delete_after = 120
             )
+
+            await self.register_definition_message(message, sorted_definitions)
+
+    async def register_definition_message(self, message, definitions):
+        if len(definitions) >= 2:
+            await self.bot.add_reaction(message, '➡')
+
+            self.definitions_by_message[message.id] = (definitions, 0)
 
     DEFINE_URL = 'https://mashape-community-urban-dictionary.p.mashape.com/define'
     async def fetch_definitions(self, term):
