@@ -38,6 +38,14 @@ tweet_time = lambda tweet: datetime.strptime(
     '%a %b %d %H:%M:%S +0000 %Y'
 )
 
+def tweet_favorite_count(tweet):
+    try:
+        rt_status = tweet['retweeted_status']
+    except KeyError:
+        return tweet['favorite_count']
+    else:
+        return rt_status['favorite_count']
+
 TWITTER_STATUS_PATTERN = re.compile(r'http[s]?://twitter.com/\S+/status/(?P<status_id>\d+)')
 
 PAST_FORMS = {
@@ -55,7 +63,7 @@ def tweet_embed(tweet):
     body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
         text  = tweet['text'],
         rts   = tweet['retweet_count'],
-        likes = tweet['favorite_count']
+        likes = tweet_favorite_count(tweet)
     )
     embed = Embed(
         title       = 'Latest tweet',
