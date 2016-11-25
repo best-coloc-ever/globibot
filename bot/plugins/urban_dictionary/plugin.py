@@ -85,8 +85,9 @@ class UrbanDictionary(Plugin):
             if new_index < (len(definitions) - 1):
                 await self.bot.add_reaction(message, '➡')
 
-    @command(p.string('!define') + p.bind(p.word, 'term'), global_cooldown(30))
-    async def define_word_command(self, message, term):
+    @command(p.string('!define'), global_cooldown(30))
+    async def define_word_command(self, message):
+        term = message.clean_content[len('!define'):].strip()
         definitions = await self.fetch_definitions(term)
 
         if definitions:
