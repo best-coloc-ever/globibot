@@ -17,9 +17,11 @@ from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.platform.asyncio import to_asyncio_future
 
+from random import randint
 from collections import namedtuple
-
 from urllib.parse import urlencode
+
+from discord import Embed
 
 import random
 import string
@@ -39,6 +41,48 @@ ChannelState = lambda name, state: dict(
     name = name,
     on = state
 )
+
+def twitch_alert_embed(channel, users):
+    description = (
+        '🕹 *{game}*\n'
+        '👀 *{views:,}* '
+        '❤ *{follows:,}*'
+            .format(
+                game    = channel.game,
+                views   = channel.views,
+                follows = channel.followers,
+            )
+    )
+
+    embed = Embed(
+        title       = 'Just went live!',
+        description = description,
+        url         = channel.url
+    )
+
+    embed.set_author(
+        name     = channel.display_name,
+        icon_url = 'https://twitch.tv/favicon.ico',
+        url      = channel.url
+    )
+
+    if users:
+        embed.add_field(
+            name  = 'Wake up!',
+            value = ' '.join(f.mention(user_id) for user_id in users)
+        )
+
+    embed.add_field(
+        name  = 'Pro tip',
+        value = 'You can now link your Twitch account on '
+                '[globibot.com](https://globibot.com/#connections) '
+                'to get notified when your favorite streamers go live',
+    )
+
+    embed.set_thumbnail(url=channel.logo)
+    embed.color = randint(0, 0xffffff)
+
+    return embed
 
 class Twitch(Plugin):
 
@@ -223,16 +267,13 @@ class Twitch(Plugin):
         )
 
         async for event in events:
-            self.debug(event)
             if event['type'] == 'stream-up':
                 users = self.users_to_mention(name, server)
-                users_mention = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
-                    server.default_channel,
-                    '{}\n`{}` just went live!\n{}\n'
-                    '🆕 *You can now link your Twitch account on https://globibot.com/#connections to get notified when your favorite streamers go live*'
-                        .format(users_mention, channel.display_name, channel.url)
+                    server.default_channel, '',
+                    embed = twitch_alert_embed(channel, users)
                 )
+
             if event['type'] == 'stream-down':
                 await self.send_message(
                     server.default_channel,
