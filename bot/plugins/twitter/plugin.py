@@ -15,11 +15,10 @@ from twitter import Twitter as TwitterAPI
 from twitter import OAuth
 
 from random import randint
-from humanize import naturaltime
 from datetime import datetime
 from collections import namedtuple
 
-from discord import Embed, Color
+from discord import Embed
 
 import asyncio
 import re
@@ -50,18 +49,28 @@ PAST_FORMS = {
 }
 
 def tweet_embed(tweet):
+    name = tweet['user']['name']
     screen_name = tweet['user']['screen_name']
 
+    body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
+        text  = tweet['text'],
+        rts   = tweet['retweet_count'],
+        likes = tweet['favorite_count']
+    )
     embed = Embed(
-        title       = 'Latest tweet from {}'.format(screen_name),
-        description = tweet['text'],
+        title       = 'Latest tweet',
+        description = body,
         url         = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id']),
     )
-    embed.colour = randint(0, 0xffffff)
-    embed.timestamp = tweet_time(tweet)
+    embed.set_author(
+        name     = name,
+        icon_url = 'https://twitter.com/favicon.ico',
+        url      = 'https://twitter.com/{}'.format(screen_name)
+    )
     embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
-    embed.provider.name = 'Twitter'
-    embed.provider.url = 'https://twitter.com'
+    embed.colour = randint(0, 0xffffff)
+    embed.set_footer(text='Click the reactions below to like or retweet')
+    embed.timestamp = tweet_time(tweet)
 
     try:
         entities = tweet['extended_entities']['media']
