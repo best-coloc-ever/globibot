@@ -42,7 +42,7 @@ ChannelState = lambda name, state: dict(
     on = state
 )
 
-def twitch_alert_embed(channel):
+def twitch_alert_embed(channel, show_pro_tip=False):
     description = (
         '🕹 *{game}*\n'
         '👀 *{views:,}* '
@@ -66,12 +66,13 @@ def twitch_alert_embed(channel):
         url      = channel.url
     )
 
-    embed.add_field(
-        name  = 'Pro tip',
-        value = 'You can now link your Twitch account on '
-                '[globibot.com](https://globibot.com/#connections) '
-                'to get notified when your favorite streamers go live',
-    )
+    if show_pro_tip:
+        embed.add_field(
+            name  = 'Pro tip',
+            value = 'You can now link your Twitch account on '
+                    '[globibot.com](https://globibot.com/#connections) '
+                    'to get notified when your favorite streamers go live',
+        )
 
     embed.set_thumbnail(url=channel.logo)
     embed.color = randint(0, 0xffffff)
@@ -266,7 +267,7 @@ class Twitch(Plugin):
                 mentions = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
                     server.default_channel, '{}\nWake up!'.format(mentions),
-                    embed = twitch_alert_embed(channel)
+                    embed = twitch_alert_embed(channel, True)
                 )
 
             if event['type'] == 'stream-down':
@@ -278,6 +279,8 @@ class Twitch(Plugin):
         self.info('Stopped monitoring: {}'.format(name))
 
     async def whisper_monitor_forever(self, channel_name, user):
+        channel = await self.api.channel(channel_name)
+
         events = await self.pubsub.subscribe(
             PubSub.Topics.VIDEO_PLAYBACK(channel_name),
             user.id
@@ -286,9 +289,8 @@ class Twitch(Plugin):
         async for event in events:
             if event['type'] == 'stream-up':
                 await self.send_message(
-                    user,
-                    '`{}` just went live!'
-                        .format(channel_name)
+                    user, 'Just a heads up',
+                    embed = twitch_alert_embed(channel)
                 )
 
     def users_to_mention(self, channel_name, server):
