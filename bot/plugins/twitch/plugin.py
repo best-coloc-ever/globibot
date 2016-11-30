@@ -42,7 +42,7 @@ ChannelState = lambda name, state: dict(
     on = state
 )
 
-def twitch_alert_embed(channel, users):
+def twitch_alert_embed(channel):
     description = (
         '🕹 *{game}*\n'
         '👀 *{views:,}* '
@@ -65,12 +65,6 @@ def twitch_alert_embed(channel, users):
         icon_url = 'https://twitch.tv/favicon.ico',
         url      = channel.url
     )
-
-    if users:
-        embed.add_field(
-            name  = 'Wake up!',
-            value = ' '.join(f.mention(user_id) for user_id in users)
-        )
 
     embed.add_field(
         name  = 'Pro tip',
@@ -269,9 +263,10 @@ class Twitch(Plugin):
         async for event in events:
             if event['type'] == 'stream-up':
                 users = self.users_to_mention(name, server)
+                mentions = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
-                    server.default_channel, '',
-                    embed = twitch_alert_embed(channel, users)
+                    server.default_channel, '{}\nWake up!'.format(mentions),
+                    embed = twitch_alert_embed(channel)
                 )
 
             if event['type'] == 'stream-down':
