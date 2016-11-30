@@ -56,40 +56,6 @@ PAST_FORMS = {
     'reply to':  'replied to'
 }
 
-def tweet_embed(tweet):
-    name = tweet['user']['name']
-    screen_name = tweet['user']['screen_name']
-
-    body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
-        text  = tweet['text'],
-        rts   = tweet['retweet_count'],
-        likes = tweet_favorite_count(tweet)
-    )
-    embed = Embed(
-        title       = 'Latest tweet',
-        description = body,
-        url         = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id']),
-    )
-    embed.set_author(
-        name     = name,
-        icon_url = 'https://twitter.com/favicon.ico',
-        url      = 'https://twitter.com/{}'.format(screen_name)
-    )
-    embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
-    embed.colour = randint(0, 0xffffff)
-    embed.set_footer(text='Click the reactions below to like or retweet')
-    embed.timestamp = tweet_time(tweet)
-
-    try:
-        entities = tweet['extended_entities']['media']
-        media_urls = [entity['media_url_https'] for entity in entities]
-    except:
-        pass
-    else:
-        embed.set_image(url=media_urls[0])
-
-    return embed
-
 class Twitter(Plugin):
 
     def load(self):
@@ -364,7 +330,7 @@ class Twitter(Plugin):
         self.debug('No longer monitoring {}'.format(user_id))
 
     async def send_interactive_tweet(self, channel, tweet, **kwargs):
-        message = await self.send_message(channel, '', embed=tweet_embed(tweet), **kwargs)
+        message = await self.send_message(channel, '', embed=self.tweet_embed(tweet), **kwargs)
 
         await self.set_interactive_tweet(tweet, message)
 
@@ -381,7 +347,7 @@ class Twitter(Plugin):
             await asyncio.sleep(20)
             try:
                 tweet = self.client.statuses.show(id=tweet['id'])
-                await self.edit_message(message, '', embed=tweet_embed(tweet))
+                await self.edit_message(message, '', embed=self.tweet_embed(tweet))
             except Exception as e:
                 self.error(e)
                 pass
@@ -555,3 +521,72 @@ class Twitter(Plugin):
                     ),
                 delete_after = 5
             )
+
+    def replies_to_tweet(self, tweet):
+        screen_name = tweet['user']['screen_name']
+        query = '@{}'.format(screen_name)
+
+        try:
+            result = self.client.search.tweets(q=query, since_id=tweet['id'])
+            statuses = result['statuses']
+        except Exception as e:
+            self.debug('Error fetching replies: {}'.format(e))
+            return []
+        else:
+            return [
+                status for status in statuses
+                if status['in_reply_to_status_id'] == tweet['id']
+            ]
+
+    def tweet_embed(self, tweet):
+        name = tweet['user']['name']
+        screen_name = tweet['user']['screen_name']
+
+        body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
+            text  = tweet['text'],
+            rts   = tweet['retweet_count'],
+            likes = tweet_favorite_count(tweet)
+        )
+        embed = Embed(
+            title       = 'Latest tweet',
+            description = body,
+            url         = 'https://twitter.com/{}/status/{}'.format(screen_name, tweet['id']),
+        )
+        embed.set_author(
+            name     = name,
+            icon_url = 'https://twitter.com/favicon.ico',
+            url      = 'https://twitter.com/{}'.format(screen_name)
+        )
+        embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
+        embed.colour = randint(0, 0xffffff)
+        embed.set_footer(text='Click the reactions below to like or retweet')
+        embed.timestamp = tweet_time(tweet)
+
+        try:
+            entities = tweet['extended_entities']['media']
+            media_urls = [entity['media_url_https'] for entity in entities]
+        except:
+            pass
+        else:
+            embed.set_image(url=media_urls[0])
+
+        replies = self.replies_to_tweet(tweet)
+        if replies:
+            embed.add_field(
+                name  = 'Latest replies',
+                value = '\n'.join(format_reply(reply, tweet) for reply in replies[:3])
+            )
+
+        return embed
+
+def format_reply(reply, tweet):
+    screen_name = reply['user']['screen_name']
+    link = 'https://twitter.com/{}'.format(screen_name)
+    reply_mention = '@{}'.format(tweet['user']['screen_name'])
+    text = reply['text'].replace(reply_mention, '').strip()
+
+    return '[@{screen_name:10.10}]({link}): {text}'.format(
+        screen_name = screen_name,
+        link        = link,
+        text        = text
+    )
