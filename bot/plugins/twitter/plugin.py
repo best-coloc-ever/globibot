@@ -343,11 +343,11 @@ class Twitter(Plugin):
         self.interactive_tweets[message.id] = tweet
 
     async def update_tweet(self, tweet, message):
-        for i in range(10):
+        for _ in range(10):
             await asyncio.sleep(20)
             try:
                 tweet = self.client.statuses.show(id=tweet['id'])
-                await self.edit_message(message, '', embed=self.tweet_embed(tweet))
+                await self.bot.edit_message(message, '', embed=self.tweet_embed(tweet))
             except Exception as e:
                 self.error(e)
                 pass
