@@ -25,7 +25,7 @@ import re
 
 MonitoredChannel = namedtuple(
     'MonitoredChannel',
-    ['id', 'user_id', 'server_id']
+    ['id', 'user_id', 'server_id', 'channel_id']
 )
 
 OAuthUser = namedtuple(
@@ -151,15 +151,16 @@ class Twitter(Plugin):
 
         with self.transaction() as trans:
             trans.execute(q.add_monitored, dict(
-                user_id   = user_id,
-                server_id = message.server.id
+                user_id    = user_id,
+                server_id  = message.server.id,
+                channel_id = message.channel.id
             ))
 
-            self.run_async(self.monitor_forever(user_id, message.server))
+            self.run_async(self.monitor_forever(user_id, message.channel))
 
             await self.send_message(
                 message.channel,
-                'Now monitoring `{}` tweets'.format(screen_name),
+                'Now monitoring `{}` tweets in this channel'.format(screen_name),
                 delete_after=15
             )
 
@@ -299,9 +300,12 @@ class Twitter(Plugin):
                     serv for serv in self.bot.servers
                     if serv.id == str(channel.server_id)
                 )
-                self.run_async(self.monitor_forever(channel.user_id, server))
+                self.run_async(self.monitor_forever(
+                    channel.user_id,
+                    server.get_channel(str(channel.channel_id))
+                ))
 
-    async def monitor_forever(self, user_id, server):
+    async def monitor_forever(self, user_id, channel):
         self.monitored.add(user_id)
 
         tweets = self.get_tweets(user_id, count=1)
@@ -321,10 +325,10 @@ class Twitter(Plugin):
                     if tweet_time(latest) > tweet_time(last_tweet):
                         last_tweet = latest
                         m = await self.send_interactive_tweet(
-                            server.default_channel,
+                            channel,
                             latest
                         )
-                        self.last_tweets[server.default_channel.id] = latest
+                        self.last_tweets[channel.id] = latest
                         self.run_async(self.update_tweet(latest, m))
 
         self.debug('No longer monitoring {}'.format(user_id))
