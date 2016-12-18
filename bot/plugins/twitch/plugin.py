@@ -17,7 +17,6 @@ from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.platform.asyncio import to_asyncio_future
 
-from random import randint
 from collections import namedtuple
 from urllib.parse import urlencode
 
@@ -75,7 +74,7 @@ def twitch_alert_embed(channel, show_pro_tip=False):
         )
 
     embed.set_thumbnail(url=channel.logo)
-    embed.color = randint(0, 0xffffff)
+    embed.color = 0x6441a4
 
     return embed
 

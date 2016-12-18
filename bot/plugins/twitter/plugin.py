@@ -14,7 +14,6 @@ from .handlers import OAuthTokenHandler, OAuthAuthorizeHandler, \
 from twitter import Twitter as TwitterAPI
 from twitter import OAuth
 
-from random import randint
 from datetime import datetime
 from collections import namedtuple
 
@@ -562,7 +561,7 @@ class Twitter(Plugin):
             url      = 'https://twitter.com/{}'.format(screen_name)
         )
         embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
-        embed.colour = randint(0, 0xffffff)
+        embed.colour = 0x1da1f2
         embed.set_footer(text='Click the reactions below to like or retweet')
         embed.timestamp = tweet_time(tweet)
 

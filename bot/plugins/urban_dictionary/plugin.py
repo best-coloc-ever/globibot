@@ -9,8 +9,6 @@ from tornado.httputil import url_concat
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.platform.asyncio import to_asyncio_future
 
-from random import randint
-
 from discord import Embed
 
 import asyncio
@@ -40,7 +38,7 @@ def definition_embed(definitions, index):
 
     embed.set_footer(text='definition {} / {}'.format(index + 1, len(definitions)))
 
-    embed.color = randint(0, 0xffffff)
+    embed.color = 0xe86222
 
     return embed
 
