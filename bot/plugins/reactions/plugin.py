@@ -36,6 +36,7 @@ class Reactions(Plugin):
             self.debug('No Message')
         else:
             await self.bot.add_reaction(last_message, emoji)
+            await self.bot.delete_message(message)
 
     @command(p.string('!react') + p.bind(p.mention, 'who') + p.bind(p.emoji, 'emoji_id'), master_only)
     async def react_last_user_emoji(self, message, who, emoji_id):
@@ -52,6 +53,7 @@ class Reactions(Plugin):
                     if emoji.id == str(emoji_id):
                         try:
                             await self.bot.add_reaction(last_message, emoji)
+                            await self.bot.delete_message(message)
                             return
                         except:
                             break
