@@ -12,17 +12,16 @@ RUN pip install \
     pyyaml \
     pillow \
     pynacl \
-    git+https://github.com/docker/docker-py@master \
+    docker-py \
     watchdog \
     cleverbot \
-    python-instagram-ext
+    python-instagram-ext \
+    gtts \
+    humanize
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
     libav-tools
-
-RUN pip install gtts
-RUN pip install humanize
 
 ADD . /app
 WORKDIR /app
