@@ -91,6 +91,7 @@ class Twitch(Plugin):
         self.api = TwitchAPI(self.client_id, self.debug)
         self.pubsub = PubSub(self.debug, self.run_async)
 
+        self.channels_info = dict()
         self.restore_monitored()
 
         context = dict(plugin=self, bot=self.bot)
@@ -105,6 +106,8 @@ class Twitch(Plugin):
         )
 
         self.token_states = dict()
+
+        self.run_async(self.refresh_channels_info_forever())
 
     def unload(self):
         asyncio.ensure_future(self.pubsub.shutdown())
@@ -252,18 +255,30 @@ class Twitch(Plugin):
     Details
     '''
 
-    async def monitor_forever(self, name, server):
-        self.info('Monitoring: {}'.format(name))
+    CHANNELS_INFO_REFRESH_INTERVAL = 60 * 10
+    async def refresh_channels_info_forever(self):
+        while True:
+            await asyncio.sleep(Twitch.CHANNELS_INFO_REFRESH_INTERVAL)
+            for channel_name in self.channels_info:
+                await self.refresh_channel_info(channel_name)
 
-        channel = await self.api.channel(name)
+    async def refresh_channel_info(self, channel_name):
+        channel = await self.api.channel(channel_name)
+        self.channels_info[channel_name] = channel
+
+    async def monitor_forever(self, channel_name, server):
+        self.info('Monitoring: {}'.format(channel_name))
+
+        await self.refresh_channel_info(channel_name)
         events = await self.pubsub.subscribe(
-            PubSub.Topics.VIDEO_PLAYBACK(channel.name),
+            PubSub.Topics.VIDEO_PLAYBACK(channel_name),
             server.id
         )
 
         async for event in events:
+            channel = self.channels_info[channel_name]
             if event['type'] == 'stream-up':
-                users = self.users_to_mention(name, server)
+                users = self.users_to_mention(channel.name, server)
                 mentions = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
                     server.default_channel, '{}\nWake up!'.format(mentions),
@@ -276,10 +291,10 @@ class Twitch(Plugin):
                     '`{}` just went offline 😢'.format(channel.display_name)
                 )
 
-        self.info('Stopped monitoring: {}'.format(name))
+        self.info('Stopped monitoring: {}'.format(channel_name))
 
     async def whisper_monitor_forever(self, channel_name, user):
-        channel = await self.api.channel(channel_name)
+        await self.refresh_channel_info(channel_name)
 
         events = await self.pubsub.subscribe(
             PubSub.Topics.VIDEO_PLAYBACK(channel_name),
@@ -290,7 +305,7 @@ class Twitch(Plugin):
             if event['type'] == 'stream-up':
                 await self.send_message(
                     user, 'Just a heads up',
-                    embed = twitch_alert_embed(channel)
+                    embed = twitch_alert_embed(self.channels_info[channel_name])
                 )
 
     def users_to_mention(self, channel_name, server):
