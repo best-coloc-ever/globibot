@@ -39,7 +39,18 @@ def user_cooldown(seconds):
     call.__doc__ = 'User cooldown {}s'.format(seconds)
     return call
 
-def global_cooldown(seconds):
+class InCooldownError(PluginException):
+
+    def __init__(self, usable_in):
+        self.usable_in = usable_in
+
+    def error(self, message):
+        return (
+            '{} calm down cowboy (command usable in `{:.2f}` seconds)'
+                .format(message.author.mention, self.usable_in)
+        )
+
+def global_cooldown(seconds, verbose=False):
     last_used = 0
 
     def call(bot, message):
@@ -48,6 +59,8 @@ def global_cooldown(seconds):
         if now - last_used >= seconds:
             last_used = now
             return True
+        if verbose:
+            raise InCooldownError(seconds - (now - last_used))
         return False
 
     call.__doc__ = 'Global cooldown {}s'.format(seconds)
