@@ -240,10 +240,10 @@ class Eval(Plugin):
     @command(
         eval_env_prefix + p.string('build')
                         + p.bind(p.word,    'env_name')
-                        + p.bind(p.snippet, 'snippet'),
-        master_only
+                        + p.bind(p.word,    'language')
+                        + p.bind(p.snippet, 'snippet')
     )
-    async def build_env(self, message, env_name, snippet):
+    async def build_env(self, message, env_name, language, snippet):
         if snippet.language != 'dockerfile':
             return
 
@@ -265,7 +265,7 @@ class Eval(Plugin):
 
         errored = flags['errored']
         if not errored:
-            self.save_environment(message.author.id, env_name, image, snippet.code)
+            self.save_environment(message.author.id, env_name, image, snippet.code, language)
 
         await self.stream_data(response_stream, build_stream, format_data)
         notice = 'Build errored' if errored else 'Build succeeded'
@@ -324,12 +324,6 @@ class Eval(Plugin):
             with open('{}/{}'.format(directory, 'code.snippet'), 'w') as f:
                 f.write(snippet.code)
 
-            await self.send_message(
-                message.channel,
-                '{} Running your `{}` snippet in `{}`'
-                    .format(message.author.mention, snippet.language, environment.name),
-                delete_after=5
-            )
             response_stream = await self.send_message(
                 message.channel,
                 '`Waiting for output`'
@@ -399,7 +393,7 @@ class Eval(Plugin):
 
             return [Environment(*row) for row in trans.fetchall()]
 
-    def save_environment(self, user_id, env_name, image, dockerfile, language=None):
+    def save_environment(self, user_id, env_name, image, dockerfile, language):
         with self.transaction() as trans:
             trans.execute(q.save_environment, dict(
                 author_id  = user_id,
