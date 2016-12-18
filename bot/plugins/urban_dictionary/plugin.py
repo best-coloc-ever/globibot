@@ -13,6 +13,8 @@ from random import randint
 
 from discord import Embed
 
+import asyncio
+
 def definition_embed(definitions, index):
     definition = definitions[index]
 
@@ -80,12 +82,13 @@ class UrbanDictionary(Plugin):
 
             self.definitions_by_message[message.id] = (definitions, new_index)
 
+            await asyncio.sleep(5)
             if new_index > 0:
                 await self.bot.add_reaction(message, '⬅')
             if new_index < (len(definitions) - 1):
                 await self.bot.add_reaction(message, '➡')
 
-    @command(p.string('!define'), global_cooldown(30))
+    @command(p.string('!define'), global_cooldown(60, True))
     async def define_word_command(self, message):
         term = message.clean_content[len('!define'):].strip()
         definitions = await self.fetch_definitions(term)
@@ -101,6 +104,13 @@ class UrbanDictionary(Plugin):
             )
 
             await self.register_definition_message(message, sorted_definitions)
+        else:
+            await self.send_message(
+                message.channel,
+                'There is no definition of `{}` on urban dictionary yet'
+                    .format(term),
+                delete_after = 5
+            )
 
     async def register_definition_message(self, message, definitions):
         if len(definitions) >= 2:
