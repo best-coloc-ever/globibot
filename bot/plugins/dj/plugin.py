@@ -37,6 +37,7 @@ class Dj(Plugin):
         )
 
         self.players = dict()
+        self.volumes = defaultdict(lambda: 1.0)
         self.tts = TTSManager()
 
         self.ws_consumers = defaultdict(set)
@@ -77,6 +78,16 @@ class Dj(Plugin):
 
         await self.delete_message_after(message, 5)
 
+    @command(p.string('!volume') + p.bind(p.integer, 'vol'), master_only)
+    async def volume(self, message, vol):
+        if vol < 0 or vol > 100:
+            return
+
+        vol = float(vol) / 100
+        self.volumes[message.server.id] = vol
+        player = self.get_player(message.server)
+        player.player.volume = vol
+
     '''
     Helpers
     '''
@@ -112,7 +123,8 @@ class Dj(Plugin):
         try:
             player = self.players[server.id]
         except KeyError:
-            player = ServerPlayer(server, self.bot.voice_client_in)
+            get_volume = lambda: self.volumes[server.id]
+            player = ServerPlayer(server, self.bot.voice_client_in, get_volume)
             self.players[server.id] = player
             on_next = lambda item: self.notify_ws_next(server, item)
             self.run_async(player.start(self.error, on_next))

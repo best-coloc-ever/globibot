@@ -52,9 +52,10 @@ class PlayerItem:
 
 class ServerPlayer:
 
-    def __init__(self, server, get_voice):
+    def __init__(self, server, get_voice, get_volume):
         self.server = server
         self.get_voice = get_voice
+        self.get_volume = get_volume
 
         self.queue = asyncio.Queue()
         self.items = deque()
@@ -70,6 +71,7 @@ class ServerPlayer:
             try:
                 voice = self.get_voice(self.server)
                 self.player = await item.make_player(voice)
+                self.player.volume = self.get_volume()
                 self.player.start()
             except Exception as e:
                 on_error(e)
