@@ -12,6 +12,10 @@ from .player import ServerPlayer, ItemType, PlayerItem
 
 from collections import defaultdict
 
+from discord import Embed
+
+import asyncio
+
 user_data = lambda user: dict(
     id         = user.id,
     name       = user.name,
@@ -27,6 +31,9 @@ def item_data(item):
 
     return data
 
+def required_skips_for(count):
+    return int(1 + (count + 1) / 3)
+
 class Dj(Plugin):
 
     def load(self):
@@ -41,6 +48,14 @@ class Dj(Plugin):
         self.tts = TTSManager()
 
         self.ws_consumers = defaultdict(set)
+        self.ongoing_skips = dict()
+
+    async def on_reaction_add(self, reaction, user):
+        if user == self.bot.user:
+            return
+
+        if reaction.emoji == '🗳':
+            await self.check_skips(reaction.message, reaction.count - 1)
 
     '''
     Commands
@@ -52,6 +67,25 @@ class Dj(Plugin):
         await self.queue_tts(message.server, message.author, content)
 
         await self.delete_message_after(message, 5)
+
+    @command(p.string('!voteskip'))
+    async def voteskip(self, message):
+        if message.server.id in self.ongoing_skips:
+            return
+
+        player = self.get_player(message.server)
+
+        embed = Embed(
+            title       = 'Voteskip',
+            description = 'Skip __{}__ ?'.format(player.items[0].resource)
+        )
+        embed.set_footer(text='Click the reaction below to cast your vote')
+
+        m = await self.send_message(message.channel, '', embed=embed)
+        await self.bot.add_reaction(m, '🗳')
+
+        self.ongoing_skips[message.server.id] = m
+        self.run_async(self.skip_timeout(message.server.id, m))
 
     @command(p.string('!tts-lang'))
     async def tts_lang_command(self, message):
@@ -91,6 +125,32 @@ class Dj(Plugin):
     '''
     Helpers
     '''
+
+    async def check_skips(self, message, count):
+        try:
+            skip_m = self.ongoing_skips[message.server.id]
+        except KeyError:
+            pass
+        else:
+            if skip_m.id == message.id:
+                user_count = len(self.bot.voice_client_in(skip_m.server).channel.voice_members) - 1
+                if count >= required_skips_for(user_count):
+                    player = self.get_player(skip_m.server)
+                    player.skip()
+
+                    del self.ongoing_skips[message.server.id]
+                    await self.bot.delete_message(message)
+
+    async def skip_timeout(self, server_id, m):
+        await asyncio.sleep(30)
+        try:
+            skip_m = self.ongoing_skips[server_id]
+        except:
+            pass
+        else:
+            if skip_m.id == m.id:
+                await self.bot.delete_message(m)
+                del self.ongoing_skips[server_id]
 
     async def queue_tts(self, server, user, content, lang=None):
         sound_file = self.tts.talk_in(server, content, lang)

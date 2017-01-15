@@ -13,7 +13,8 @@ DEFAULT_PLAYER_OPTIONS = {
 }
 
 YTDL_PLAYER_OPTS = {
-    'default_search': 'ytsearch'
+    'default_search': 'ytsearch',
+    'noplaylist': True
 }
 
 class PlayerItem:
