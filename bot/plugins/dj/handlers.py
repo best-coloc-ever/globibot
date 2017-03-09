@@ -43,6 +43,17 @@ async def join_voice(handler, server_id, channel_id):
 
     return dict(message='Ok')
 
+@with_body_arguments('server_id')
+async def leave_voice(handler, server_id):
+    server = handler.bot.find_server(server_id)
+
+    if server is None:
+        return dict(error='Unknown server')
+
+    await handler.plugin.leave_voice(server)
+
+    return dict(message='Ok')
+
 @with_body_arguments('server_id', 'content')
 async def tts(handler, server_id, content):
     server = handler.bot.find_server(server_id)
@@ -80,6 +91,7 @@ async def queue_song(handler, server_id, song):
 
 ACTIONS = dict((
     ('join', join_voice),
+    ('leave', leave_voice),
     ('tts', tts),
     ('tts-lang', tts_lang),
     ('queue', queue_song)

@@ -169,6 +169,11 @@ class Dj(Plugin):
         else:
             await voice.move_to(channel)
 
+    async def leave_voice(self, server):
+        voice = self.bot.voice_client_in(server)
+        if voice is not None:
+            await voice.disconnect()
+
     async def queue_item(self, server, user, type, resource):
         try:
             item = PlayerItem(type, resource, user)

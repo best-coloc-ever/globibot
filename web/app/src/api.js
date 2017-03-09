@@ -73,6 +73,13 @@ class API {
     })
   }
 
+  static leaveVoice(serverId) {
+    return API.voiceAction({
+      action_type: 'leave',
+      server_id: serverId
+    })
+  }
+
   static tts(serverId, content) {
     return API.voiceAction({
       action_type: 'tts',

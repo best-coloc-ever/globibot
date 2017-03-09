@@ -41,6 +41,17 @@
           <div class="mdl-cell mdl-cell--4-col"></div>
           <div class="mdl-cell mdl-cell--4-col">
             <ul class="mdl-list">
+              <li class="mdl-list__item">
+                <span class="mdl-list__item-primary-content">
+                </span>
+                <span class="mdl-list__item-secondary-action">
+                  <button
+                    class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect"
+                    onclick={ leaveVoice(voice.server.id) }>
+                    Leave
+                  </button>
+                </span>
+              </li>
               <li each={ channel in voice.channels } class="mdl-list__item">
                 <span class="mdl-list__item-primary-content">
                   { channel.name }
@@ -86,6 +97,12 @@
     this.joinChannel = (serverId, channelId) => {
       return () => {
         API.joinVoice(serverId, channelId)
+      }
+    }
+
+    this.leaveVoice = (serverId) => {
+      return () => {
+        API.leaveVoice(serverId)
       }
     }
 
