@@ -51,13 +51,13 @@ class InCooldownError(PluginException):
         )
 
 def global_cooldown(seconds, verbose=False):
-    last_used = 0
+    cache = defaultdict(lambda: 0)
 
     def call(bot, message):
-        nonlocal last_used
         now = time()
+        last_used = cache[message.channel.id]
         if now - last_used >= seconds:
-            last_used = now
+            cache[message.channel.id] = now
             return True
         if verbose:
             raise InCooldownError(seconds - (now - last_used))
