@@ -11,11 +11,12 @@ from . import errors as e
 from .handlers import OAuthTokenHandler, OAuthAuthorizeHandler, \
                       TwitterStatusHandler, TwitterDisconnectHandler
 
-from twitter import Twitter as TwitterAPI
-from twitter import OAuth
+from .api import TwitterApi, Credentials as TwitterCredentials
 
-from datetime import datetime
 from collections import namedtuple
+from functools import partial
+from datetime import datetime
+from time import time as now
 
 from discord import Embed
 
@@ -58,14 +59,14 @@ PAST_FORMS = {
 class Twitter(Plugin):
 
     def load(self):
-        self.oauth = OAuth(
-            self.config.get(c.ACCESS_TOKEN_KEY),
-            self.config.get(c.ACCESS_TOKEN_SECRET_KEY),
+        credentials = TwitterCredentials(
             self.config.get(c.CONSUMER_KEY_KEY),
             self.config.get(c.CONSUMER_SECRET_KEY),
+            self.config.get(c.ACCESS_TOKEN_KEY),
+            self.config.get(c.ACCESS_TOKEN_SECRET_KEY),
         )
 
-        self.client = TwitterAPI(auth=self.oauth)
+        self.api = TwitterApi(credentials)
 
         context = dict(plugin=self, bot=self.bot)
         self.add_web_handlers(
@@ -111,7 +112,7 @@ class Twitter(Plugin):
     async def on_new(self, message):
         for match in TWITTER_STATUS_PATTERN.finditer(message.clean_content):
             status_id = match.group('status_id')
-            tweet = self.client.statuses.show(id=status_id)
+            tweet = await self.api.statuses.show(id=status_id, tweet_mode='extended')
             if tweet:
                 await asyncio.sleep(2)
                 await self.set_interactive_tweet(tweet, message)
@@ -123,13 +124,14 @@ class Twitter(Plugin):
     twitter_prefix = p.string('!twitter')
 
     @command(
-        twitter_prefix + p.string('last') + p.bind(p.word, 'screen_name'),
-        master_only
+        twitter_prefix + p.string('last') + p.bind(p.word, 'screen_name')
     )
     async def last_tweet(self, message, screen_name):
-        user = self.get_user(screen_name=screen_name)
-        tweets = self.get_tweets(user['id'], count=1)
+        user = await self.get_user(screen_name=screen_name)
+        self.debug(user['id'])
+        tweets = await self.get_tweets(user['id'], count=5)
 
+        # self.debug([tweet['full_text'] for tweet in tweets])
         if tweets:
             tweet = tweets[0]
             m = await self.send_interactive_tweet(
@@ -145,7 +147,7 @@ class Twitter(Plugin):
         master_only
     )
     async def monitor(self, message, screen_name):
-        user = self.get_user(screen_name=screen_name)
+        user = await self.get_user(screen_name=screen_name)
         user_id = user['id']
 
         with self.transaction() as trans:
@@ -168,7 +170,7 @@ class Twitter(Plugin):
         master_only
     )
     async def unmonitor(self, message, screen_name):
-        user = self.get_user(screen_name=screen_name)
+        user = await self.get_user(screen_name=screen_name)
         user_id = user['id']
 
         if user_id not in self.monitored:
@@ -194,16 +196,17 @@ class Twitter(Plugin):
             trans.execute(q.get_monitored)
             monitored = [MonitoredChannel(*row) for row in trans.fetchall()]
 
-            users = [
-                self.get_user_by_id(channel.user_id)['screen_name']
+            user_futures = (
+                self.get_user_by_id(channel.user_id)
                 for channel in monitored
                 if str(channel.server_id) == message.server.id
-            ]
+            )
+            users = await asyncio.gather(*user_futures)
 
             await self.send_message(
                 message.channel,
                 'I\'m currently monitoring the following channels:\n{}'
-                    .format(f.code_block(users))
+                    .format(f.code_block(user['screen_name'] for user in users))
             )
 
     @command(p.string('!like'))
@@ -270,23 +273,27 @@ class Twitter(Plugin):
     Details
     '''
 
-    def get_user(self, screen_name):
+    async def get_user(self, screen_name):
         try:
-            return self.client.users.lookup(screen_name=screen_name)[0]
+            users = await self.api.users.lookup(screen_name=screen_name)
+            return users[0]
         except Exception:
             raise e.UserNotFound(screen_name)
 
-    def get_user_by_id(self, user_id):
-        return self.client.users.lookup(user_id=user_id)[0]
+    async def get_user_by_id(self, user_id):
+        users = await self.api.users.lookup(user_id=user_id)
+        return users[0]
 
-    def get_tweets(self, user_id, count):
+    async def get_tweets(self, user_id, count):
         try:
-            return self.client.statuses.user_timeline(
+            return await self.api.statuses.user_timeline(
                 user_id=user_id,
                 count=count,
-                exclude_replies=True
+                exclude_replies=True,
+                tweet_mode='extended'
             )
-        except:
+        except Exception as e:
+            self.error('Error retrieving {} tweets: {}'.format(user_id, e))
             return None
 
     def restore_monitored(self):
@@ -307,33 +314,38 @@ class Twitter(Plugin):
     async def monitor_forever(self, user_id, channel):
         self.monitored.add(user_id)
 
-        tweets = self.get_tweets(user_id, count=1)
+        tweets = await self.get_tweets(user_id, count=1)
         if not tweets:
+            self.error('NOT MONITORING TWEETS FOR {}'.format(user_id))
             return
         last_tweet = tweets[0]
 
         self.debug('Monitoring new tweets from {}'.format(user_id))
 
         while user_id in self.monitored:
-            await asyncio.sleep(45)
-
-            tweets = self.get_tweets(user_id, count=1)
+            start = now()
+            tweets = await self.get_tweets(user_id, count=5)
+            self.debug(
+                'took {:.3f} s to fetch tweets for {}: [{}]'
+                    .format(now() - start, last_tweet['user']['screen_name'], 'OK' if tweets else 'FAIL')
+            )
             if tweets:
-                latest = tweets[0]
-                if latest['id'] != last_tweet['id']:
-                    if tweet_time(latest) > tweet_time(last_tweet):
-                        last_tweet = latest
+                for tweet in sorted(tweets, key=tweet_time):
+                    if tweet_time(tweet) > tweet_time(last_tweet):
+                        last_tweet = tweet
                         m = await self.send_interactive_tweet(
                             channel,
-                            latest
+                            tweet
                         )
-                        self.last_tweets[channel.id] = latest
-                        self.run_async(self.update_tweet(latest, m))
+                        self.last_tweets[channel.id] = tweet
+                        self.run_async(self.update_tweet(tweet, m))
+            await asyncio.sleep(45)
 
         self.debug('No longer monitoring {}'.format(user_id))
 
     async def send_interactive_tweet(self, channel, tweet, **kwargs):
-        message = await self.send_message(channel, '', embed=self.tweet_embed(tweet), **kwargs)
+        embed = await self.tweet_embed(tweet)
+        message = await self.send_message(channel, '', embed=embed, **kwargs)
 
         await self.set_interactive_tweet(tweet, message)
 
@@ -349,8 +361,9 @@ class Twitter(Plugin):
         for _ in range(10):
             await asyncio.sleep(20)
             try:
-                tweet = self.client.statuses.show(id=tweet['id'])
-                await self.bot.edit_message(message, '', embed=self.tweet_embed(tweet))
+                tweet = await self.api.statuses.show(id=tweet['id'], tweet_mode='extended')
+                embed = await self.tweet_embed(tweet)
+                await self.bot.edit_message(message, '', embed=embed)
             except Exception as e:
                 self.error(e)
                 pass
@@ -444,14 +457,14 @@ class Twitter(Plugin):
                 return OAuthUser(*data)
 
     def get_user_api(self, oauth_user):
-        oauth = OAuth(
-            oauth_user.token,
-            oauth_user.secret,
+        credentials = TwitterCredentials(
             self.config.get(c.CONSUMER_KEY_KEY),
             self.config.get(c.CONSUMER_SECRET_KEY),
+            oauth_user.token,
+            oauth_user.secret,
         )
 
-        return TwitterAPI(auth = oauth)
+        return TwitterApi(credentials)
 
     async def like_tweet(self, tweet, channel, user):
         await self.twitter_three_legged_action(
@@ -501,7 +514,7 @@ class Twitter(Plugin):
         user_api = self.get_user_api(oauth_user)
 
         try:
-            action(user_api, tweet)
+            await action(user_api, tweet)
         except Exception as e:
             await self.send_message(
                 user,
@@ -525,12 +538,12 @@ class Twitter(Plugin):
                 delete_after = 5
             )
 
-    def replies_to_tweet(self, tweet):
+    async def replies_to_tweet(self, tweet):
         screen_name = tweet['user']['screen_name']
         query = '@{}'.format(screen_name)
 
         try:
-            result = self.client.search.tweets(q=query, since_id=tweet['id'])
+            result = await self.api.search.tweets(q=query, since_id=tweet['id'])
             statuses = result['statuses']
         except Exception as e:
             self.debug('Error fetching replies: {}'.format(e))
@@ -541,12 +554,12 @@ class Twitter(Plugin):
                 if status['in_reply_to_status_id'] == tweet['id']
             ]
 
-    def tweet_embed(self, tweet):
+    async def tweet_embed(self, tweet):
         name = tweet['user']['name']
         screen_name = tweet['user']['screen_name']
 
         body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
-            text  = tweet['text'],
+            text  = tweet['full_text'],
             rts   = tweet['retweet_count'],
             likes = tweet_favorite_count(tweet)
         )
@@ -573,7 +586,7 @@ class Twitter(Plugin):
         else:
             embed.set_image(url=media_urls[0])
 
-        replies = self.replies_to_tweet(tweet)
+        replies = await self.replies_to_tweet(tweet)
         if replies:
             embed.add_field(
                 name  = 'Latest replies',
