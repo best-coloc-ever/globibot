@@ -1,28 +1,9 @@
-FROM python:3.5
+FROM python:3.6
 
 RUN apt-get update -y && apt-get install -y \
     libopus-dev \
     libav-tools \
     tesseract-ocr
-
-RUN pip install --upgrade pip
-RUN pip install \
-    discord.py \
-    tornado \
-    parse \
-    git+https://github.com/vlasovskikh/funcparserlib@master \
-    twitter \
-    youtube-dl \
-    psycopg2 \
-    pyyaml \
-    pillow \
-    pynacl \
-    docker-py \
-    watchdog \
-    cleverbot \
-    python-instagram-ext \
-    gtts \
-    humanize
 
 RUN curl -L https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-x64.tar.xz \
         | tar xJ --strip-components=1 -C /usr/ &&\
@@ -30,6 +11,12 @@ RUN curl -L https://nodejs.org/dist/v8.9.4/node-v8.9.4-linux-x64.tar.xz \
 
 ADD . /app
 WORKDIR /app
+
+RUN pip install --upgrade pip
+COPY requirements.txt ./
+RUN pip install \
+    --no-cache-dir \
+    -r requirements.txt
 
 CMD [ \
     "python3", "src/main.py", \
