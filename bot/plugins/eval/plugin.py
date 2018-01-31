@@ -2,440 +2,164 @@ from globibot.lib.plugin import Plugin
 from globibot.lib.decorators import command
 from globibot.lib.helpers import parsing as p
 from globibot.lib.helpers import formatting as f
-from globibot.lib.helpers.hooks import master_only
 
-from io import BytesIO
-from shutil import rmtree
-from collections import namedtuple
+from .handlers import ContainerLogHandler
+from .specs import EVALSPEC_PER_ALIASES, EVALSPEC_PER_LANGUAGES
+from . import constants as C
 
-from .docker import AsyncDockerClient
-from . import queries as q
+from collections import defaultdict
+from functools import partial
 
+import asyncio
+import docker
 import os
-
-Environment = namedtuple(
-    'Environment',
-    ['id', 'author_id', 'name', 'language', 'image', 'dockerfile']
-)
-
-Snippet = namedtuple(
-    'Snippet',
-    ['id', 'author_id', 'name', 'language', 'code']
-)
 
 class Eval(Plugin):
 
     def load(self):
-        self.docker = AsyncDockerClient()
+        self.docker = docker.from_env()
 
-        with self.transaction() as trans:
-            trans.execute(q.fetch_behaviors)
-            self.behaviors = [row[0] for row in trans.fetchall()]
-            self.default_behavior = self.behaviors[0]
+        self.container_logs = defaultdict(list)
 
-        self.last_snippets = dict()
+        context = dict(plugin=self)
+        self.add_web_handlers(
+            (r'/eval/logs/(?P<container_id>\S+)', ContainerLogHandler, context),
+        )
 
     '''
     Commands
     '''
 
-    eval_prefix = p.string('!eval')
+    @command(p.string('!eval') + p.string('langs'))
+    async def eval_langs(self, message):
+        await self.send_message(
+            message.channel,
+            f.code_block('\n'.join(
+                f'{lang: <10} -> {spec.image: <15} {spec.command("file.ext")}'
+                for lang, spec in EVALSPEC_PER_LANGUAGES.items()
+            ))
+        )
 
-    @command(p.bind(p.snippet, 'snippet'))
-    async def eval_code(self, message, snippet):
-        behavior = self.get_behavior(message.author.id)
-        if behavior is None:
-            await self.send_message(
-                message.author,
-                'Psst\nYou seem to have posted a `code snippet`\n'
-                'I can evaluate it if you want\n'
-                'Since your behavior was not defined, I set it to `manual`\n'
-                'type `!eval help` for more information'
-            )
-
-        self.last_snippets[message.author.id] = snippet
-
-        if behavior != 'auto':
-            return
-
-        await self.run_snippet(message, snippet, "")
-
-    @command(eval_prefix + p.string('run'))
-    async def eval_run(self, message):
-        behavior = self.get_behavior(message.author.id)
-        if behavior == 'off':
-            return
-
+    @command(p.bind(p.sparsed(p.snippet), 'snippet'))
+    async def on_snippet(self, message, snippet):
         try:
-            snippet = self.last_snippets[message.author.id]
-            run_idx = message.content.index('run')
-            await self.run_snippet(message, snippet, message.content[run_idx + len('run'):])
+            spec = EVALSPEC_PER_ALIASES[snippet.language]
         except KeyError:
             pass
-
-    @command(eval_prefix + p.string('save') + p.bind(p.word, 'name'))
-    async def eval_save(self, message, name):
-        try:
-            snippet = self.last_snippets[message.author.id]
-            snippets = self.get_snippets(message.author.id)
-            try:
-                next(s for s in snippets if s.name == name)
-                await self.send_message(
-                    message.channel,
-                    '{} You already have a snippet named `{}`'
-                        .format(message.author.mention, name),
-                    delete_after = 30
-                )
-            except StopIteration:
-                if self.save_snippet(message.author.id, name, snippet):
-                    await self.send_message(
-                        message.channel,
-                        '{} your last snippet was saved as `{}`\n use `/{}` to run it'
-                            .format(message.author.mention, name, name),
-                        delete_after = 30
-                    )
-        except KeyError:
-            pass
-
-    @command(p.bind(p.word, 'name'))
-    async def command_run(self, message, name):
-        if not name.startswith('/'):
-            return
-
-        name = name[1:]
-        snippet = self.get_snippet(message.author.id, name)
-        if snippet:
-            name_idx = message.content.index(name)
-            args = message.content[name_idx + len(name):]
-            await self.run_snippet(message, snippet, args)
-
-
-    eval_env_prefix = eval_prefix + p.string('env')
-
-    @command(eval_env_prefix + p.string('inspect') + p.bind(p.word, 'env_name'))
-    async def eval_env_inspect(self, message, env_name):
-        environments = self.get_environments(message.author.id)
-
-        try:
-            env = next(e for e in environments if e.name == env_name)
-        except StopIteration:
-            await self.send_message(
-                message.channel,
-                '{} You don\'t have any environment saved under the name `{}`'
-                    .format(message.author.mention, env_name),
-                delete_after=10
+        else:
+            query = self.query_yes_no(
+                f'{message.author.mention} Run this code with `{spec.image}` ?',
+                channel=message.channel,
+                author=message.author,
+                timeout=20
             )
-
-        await self.send_message(
-            message.channel,
-            '{} `{}` environment was built from:\n{}'
-                .format(
-                    message.author.mention,
-                    env_name,
-                    f.code_block(env.dockerfile, language='dockerfile')
+            if await query:
+                await self.eval(
+                    send_message=partial(self.send_message, message.channel),
+                    user_key=message.author.id,
+                    code=snippet.code,
+                    spec=spec
                 )
-        )
-
-    @command(eval_env_prefix + p.string('list'))
-    async def eval_env_list(self, message):
-        environments = [
-            env.name for env in self.get_environments(message.author.id)
-            if env.author_id
-        ]
-
-        await self.send_message(
-            message.channel,
-            '{} You have `{}` saved environments\n{}'
-                .format(
-                    message.author.mention,
-                    len(environments),
-                    f.code_block(environments)
-                )
-        )
-
-    @command(eval_env_prefix + p.string('map'))
-    async def eval_env_map(self, message):
-        environments = self.get_environments(message.author.id)
-
-        padding = max(map(lambda env: len(env.language), environments), default=0)
-        mapping = [
-            '{:{}} ➡ {}'.format(env.language, padding, env.name)
-            for env in environments
-        ]
-
-        await self.send_message(
-            message.channel,
-            '{} Here is your eval mapping\n{}'
-                .format(
-                    message.author.mention,
-                    f.code_block(mapping)
-                )
-        )
-
-    @command(eval_env_prefix + p.string('set')
-                             + p.bind(p.word, 'language')
-                             + p.bind(p.word, 'env_name'))
-    async def eval_set(self, message, language, env_name):
-        environments = self.get_environments(message.author.id)
-
-        try:
-            env = next(e for e in environments if e.name == env_name and e.author_id)
-        except StopIteration:
-            await self.send_message(
-                message.channel,
-                '{} You don\'t have any environment saved under the name `{}`'
-                    .format(message.author.mention, env_name),
-                delete_after=10
-            )
-            return
-
-        # Removing old mappings
-        for env in environments:
-            if env.language == language:
-                self.set_environment_language(env.id, 'none')
-        # Flagging the env with the language
-        self.set_environment_language(env.id, language)
-        await self.send_message(
-            message.channel,
-            '{} Your `{}` snippets will now be evaluated with your `{}` environment'
-                .format(message.author.mention, language, env_name)
-        )
-
-    @command(
-        eval_env_prefix + p.string('library') + p.string('build')
-                        + p.bind(p.word,    'env_name')
-                        + p.bind(p.word,    'language')
-                        + p.bind(p.snippet, 'snippet'),
-        master_only
-    )
-    async def build_env_library(self, message, env_name, language, snippet):
-        if snippet.language != 'dockerfile':
-            return
-
-        response_stream = await self.send_message(message.channel, 'Building...')
-        dockerfile = BytesIO(snippet.code.encode('utf8'))
-        flags = dict(errored=False)
-
-        image = self.tag_name(env_name)
-        build_stream = self.docker.async_build(
-            fileobj=dockerfile,
-            tag=image,
-            decode=True,
-            rm=True
-        )
-
-        def format_data(data):
-            flags['errored'] = ('error' in data)
-            return '\n'.join([str(v) for v in data.values()])
-
-        errored = flags['errored']
-        if not errored:
-            self.save_environment(None, 'library/{}'.format(env_name), image, snippet.code, language)
-
-        await self.stream_data(response_stream, build_stream, format_data)
-        notice = 'Build errored' if errored else 'Build succeeded'
-        await self.send_message(message.channel, notice)
-        await self.delete_message_after(response_stream, 10)
-
-    @command(
-        eval_env_prefix + p.string('build')
-                        + p.bind(p.word,    'env_name')
-                        + p.bind(p.word,    'language')
-                        + p.bind(p.snippet, 'snippet')
-    )
-    async def build_env(self, message, env_name, language, snippet):
-        if snippet.language != 'dockerfile':
-            return
-
-        response_stream = await self.send_message(message.channel, 'Building...')
-        dockerfile = BytesIO(snippet.code.encode('utf8'))
-        flags = dict(errored=False)
-
-        image = self.tag_name(env_name, message.author.id)
-        build_stream = self.docker.async_build(
-            fileobj=dockerfile,
-            tag=image,
-            decode=True,
-            rm=True
-        )
-
-        def format_data(data):
-            flags['errored'] = ('error' in data)
-            return '\n'.join([str(v) for v in data.values()])
-
-        errored = flags['errored']
-        if not errored:
-            self.save_environment(message.author.id, env_name, image, snippet.code, language)
-
-        await self.stream_data(response_stream, build_stream, format_data)
-        notice = 'Build errored' if errored else 'Build succeeded'
-        await self.send_message(message.channel, notice)
-        await self.delete_message_after(response_stream, 10)
-
-    @command(
-        p.string('!eval') + p.string('behavior')
-                          + p.eof
-    )
-    async def user_behavior(self, message):
-        behavior = self.get_behavior(message.author.id)
-        if behavior is None:
-            behavior = self.default_behavior
-
-        await self.send_message(
-            message.channel,
-            '{} your eval behavior is `{}`'
-                .format(message.author.mention, behavior),
-            delete_after=5
-        )
-
-    @command(
-        p.string('!eval') + p.string('behavior') + p.string('set')
-                          + p.bind(p.word, 'behavior')
-    )
-    async def set_behavior(self, message, behavior):
-        if behavior not in self.behaviors:
-            return
-
-        self.set_user_behavior(message.author.id, behavior)
-
-        await self.send_message(
-            message.channel,
-            '{} your eval behavior has been set to `{}`'
-                .format(message.author.mention, behavior),
-            delete_after=5
-        )
 
     '''
-    details
+    Detail
     '''
 
-    async def run_snippet(self, message, snippet, args):
-        environment = self.get_environment(snippet.language, message.author.id)
-        if environment is None:
-            await self.send_message(
-                message.channel,
-                '{} You have no environment associated with the language `{}`'
-                    .format(message.author.mention, snippet.language),
-                delete_after=10
+    async def eval(self, send_message, user_key, code, spec):
+        host_dir = os.path.join(C.HOST_MOUNT_DIR, user_key)
+        mount_dir = os.path.join(C.DIND_MOUNT_DIR, user_key)
+        user_volume_name = C.USER_STORAGE_VOLUME_NAME(user_key)
+
+        file_name = await spec.prepare(host_dir, code)
+        file_path = os.path.join(mount_dir, file_name)
+        await self.create_volume(user_volume_name)
+
+        try:
+            container = self.docker.containers.run(
+                image=spec.image,
+                command=spec.command(file_path),
+                **C.CONTAINER_OPTS(mount_dir, user_volume_name)
+            )
+        except docker.errors.APIError as e:
+            await send_message(
+                f'Error while creating container: {f.code_block(e)}\n',
+                delete_after=20
             )
         else:
-            directory = '/tmp/globibot/{}'.format(message.author.id)
-            os.makedirs(directory, exist_ok=True)
-            with open('{}/{}'.format(directory, 'code.snippet'), 'w') as f:
-                f.write(snippet.code)
+            logs = self.container_logs[container.id]
+            stream = container.logs(**C.CONTAINER_LOG_OPTS)
+            logs_url = f'https://globibot.com/bot/eval/logs/{container.id}'
+            await send_message(f'Running... Full logs available at {logs_url}')
 
-            response_stream = await self.send_message(
-                message.channel,
-                '`Waiting for output`'
+            streaming_message = await send_message('Waiting for output...')
+            self.run_async(self.stream_logs(streaming_message, logs, stream))
+
+            status = await self.wait_for_container(container)
+            container.remove(force=True)
+
+            final_notice = (
+                f'Container exited with status {status}'
+                if status is not None else
+                f'Container killed after {C.MAX_RUN_TIME} seconds'
+            )
+            await send_message(final_notice, delete_after=20)
+
+    async def create_volume(self, volume_name):
+        try:
+            self.docker.volumes.get(volume_name)
+        except docker.errors.NotFound:
+            self.info(f'Creating volume: {volume_name}')
+            self.docker.volumes.create(
+                volume_name,
+                driver_opts=C.VOLUME_DRIVER_OPTS
             )
 
-            run_stream = self.docker.run_async(
-                args,
-                directory,
-                environment.image,
-                message.author.id
-            )
-            format_data = lambda line: line.decode('utf8')
+    async def stream_logs(self, message, logs, stream):
+        async def send_update():
+            if logs:
+                tail = ''.join(logs[-C.MAX_STREAM_LINES:])
+                await self.bot.edit_message(message, f.code_block(tail))
 
+        def accumulate_logs():
             try:
-                await self.stream_data(response_stream, run_stream, format_data)
-                await self.send_message(message.channel, '`Exited`', delete_after=10)
-            except AsyncDockerClient.Timeout:
-                await self.send_message(message.channel, '`Evaluation timed out`')
+                for line in stream:
+                    logs.append(line.decode())
+            except docker.errors.APIError as e:
+                pass
 
-            rmtree(directory)
+        async def update_logs():
+            try:
+                while True:
+                    await send_update()
+                    await asyncio.sleep(C.STREAM_REFRESH_IMTERVAL)
+            except asyncio.CancelledError:
+                await send_update()
+                if not logs:
+                    await self.bot.edit_message(message, 'No output')
 
-    TAG_PREFIX = 'globibot_build'
-    def tag_name(self, name, user_id=None):
-        return '{}_{}:{}'.format(
-            Eval.TAG_PREFIX,
-            name,
-            user_id if user_id else 'library'
-        ),
+        loop = asyncio.get_event_loop()
+        update_task = asyncio.ensure_future(update_logs(), loop=loop)
+        await loop.run_in_executor(None, accumulate_logs)
+        update_task.cancel()
 
-    def get_behavior(self, user_id):
-        with self.transaction() as trans:
-            trans.execute(q.get_behavior, dict(
-                author_id = user_id
-            ))
+    async def wait_for_container(self, container):
+        loop = asyncio.get_event_loop()
+        call = partial(container.wait, timeout=C.MAX_RUN_TIME)
+        try:
+            return await loop.run_in_executor(None, call)
+        except:
+            return None
 
-            row = trans.fetchone()
-            if row:
-                return row[0]
-            else:
-                trans.execute(q.set_default_behavior, dict(
-                    author_id = user_id,
-                ))
+    async def query_yes_no(self, question, channel, **kwargs):
+        question_message = await self.send_message(
+            channel,
+            f'{question}\n[y]es/[n]o'
+        )
+        answer_message = await self.bot.wait_for_message(channel=channel, **kwargs)
+        await self.bot.delete_message(question_message)
 
-    def set_user_behavior(self, user_id, behavior):
-        with self.transaction() as trans:
-            trans.execute(q.set_behavior, dict(
-                author_id = user_id,
-                behavior  = behavior
-            ))
-
-    def get_environment(self, language, user_id):
-        with self.transaction() as trans:
-            trans.execute(q.get_environment, dict(
-                author_id = user_id,
-                language  = language
-            ))
-
-            row = trans.fetchone()
-            if row:
-                return Environment(*row)
-
-    def get_environments(self, user_id):
-        with self.transaction() as trans:
-            trans.execute(q.get_environments, dict(
-                author_id = user_id,
-            ))
-
-            return [Environment(*row) for row in trans.fetchall()]
-
-    def save_environment(self, user_id, env_name, image, dockerfile, language):
-        with self.transaction() as trans:
-            trans.execute(q.save_environment, dict(
-                author_id  = user_id,
-                name       = env_name,
-                image      = image,
-                dockerfile = dockerfile,
-                language   = language
-            ))
-
-    def set_environment_language(self, env_id, language):
-        with self.transaction() as trans:
-            trans.execute(q.set_language, dict(
-                id       = env_id,
-                language = language
-            ))
-
-    def get_snippet(self, user_id, name):
-        with self.transaction() as trans:
-            trans.execute(q.get_snippet, dict(
-                author_id = user_id,
-                name      = name
-            ))
-
-            data = trans.fetchone()
-            if data:
-                return Snippet(*data)
-
-    def get_snippets(self, user_id):
-        with self.transaction() as trans:
-            trans.execute(q.get_snippets, dict(
-                author_id = user_id
-            ))
-
-            return [Snippet(*row) for row in trans.fetchall()]
-
-    def save_snippet(self, user_id, name, snippet):
-        with self.transaction() as trans:
-            trans.execute(q.save_snippet, dict(
-                author_id = user_id,
-                name      = name,
-                language  = snippet.language,
-                code      = snippet.code
-            ))
-
-            return True
+        if answer_message is not None:
+            self.run_async(self.delete_message_after(answer_message, 1))
+            return answer_message.content.lower().startswith('y')
+        else:
+            return False
