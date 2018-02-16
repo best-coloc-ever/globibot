@@ -23,7 +23,7 @@ CONTAINER_OPTS = lambda mount_dir, user_volume_name: dict(
         mount_dir:        { 'bind': mount_dir,            'mode': 'ro' },
         user_volume_name: { 'bind': PERSISTENT_MOUNT_DIR, 'mode': 'rw' },
     },
-    tmpfs               = { '/tmp': 'size=256M' },
+    tmpfs               = { '/tmp': 'size=256M,exec,mode=777' },
     # throttle
     pids_limit          = 64,
     mem_limit           = '256m',
