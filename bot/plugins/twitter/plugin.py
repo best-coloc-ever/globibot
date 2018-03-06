@@ -21,9 +21,11 @@ from time import time as now
 from discord import Embed
 
 import asyncio
+import html
 import re
 
 import twitter
+
 MonitoredChannel = namedtuple(
     'MonitoredChannel',
     ['id', 'user_id', 'server_id', 'channel_id']
@@ -326,10 +328,11 @@ class Twitter(Plugin):
         while user_id in self.monitored:
             start = now()
             tweets = await self.get_tweets(user_id, count=5)
-            self.debug(
+            if now() - start > 1.:
+                self.debug(
                 'took {:.3f} s to fetch tweets for {}: [{}]'
                     .format(now() - start, last_tweet['user']['screen_name'], 'OK' if tweets else 'FAIL')
-            )
+                )
             if tweets:
                 for tweet in sorted(tweets, key=tweet_time):
                     if tweet_time(tweet) > tweet_time(last_tweet):
@@ -566,7 +569,7 @@ class Twitter(Plugin):
         screen_name = tweet['user']['screen_name']
 
         body = '{text}\n\n🔄 **{rts}** ❤ **{likes}**'.format(
-            text  = tweet['full_text'],
+            text  = html.unescape(tweet['full_text']),
             rts   = tweet['retweet_count'],
             likes = tweet_favorite_count(tweet)
         )
@@ -577,7 +580,7 @@ class Twitter(Plugin):
         )
         embed.set_author(
             name     = name,
-            icon_url = 'https://twitter.com/favicon.ico',
+            icon_url = 'https://vignette.wikia.nocookie.net/half-life/images/3/36/Twitter_favicon.png/revision/latest?cb=20160823200343&path-prefix=en',
             url      = 'https://twitter.com/{}'.format(screen_name)
         )
         embed.set_thumbnail(url=tweet['user']['profile_image_url_https'])
@@ -606,7 +609,7 @@ def format_reply(reply, tweet):
     screen_name = reply['user']['screen_name']
     link = 'https://twitter.com/{}'.format(screen_name)
     reply_mention = '@{}'.format(tweet['user']['screen_name'])
-    text = reply['text'].replace(reply_mention, '').strip()
+    text = html.unescape(reply['text'].replace(reply_mention, '').strip())
 
     return '[@{screen_name:10.10}]({link}): {text}'.format(
         screen_name = screen_name,
