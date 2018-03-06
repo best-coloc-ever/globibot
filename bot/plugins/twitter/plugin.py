@@ -23,6 +23,7 @@ from discord import Embed
 import asyncio
 import re
 
+import twitter
 MonitoredChannel = namedtuple(
     'MonitoredChannel',
     ['id', 'user_id', 'server_id', 'channel_id']
@@ -59,14 +60,14 @@ PAST_FORMS = {
 class Twitter(Plugin):
 
     def load(self):
-        credentials = TwitterCredentials(
+        self.credentials = TwitterCredentials(
             self.config.get(c.CONSUMER_KEY_KEY),
             self.config.get(c.CONSUMER_SECRET_KEY),
             self.config.get(c.ACCESS_TOKEN_KEY),
             self.config.get(c.ACCESS_TOKEN_SECRET_KEY),
         )
 
-        self.api = TwitterApi(credentials)
+        self.api = TwitterApi(self.credentials)
 
         context = dict(plugin=self, bot=self.bot)
         self.add_web_handlers(
@@ -370,8 +371,14 @@ class Twitter(Plugin):
 
     AUTHORIZE_CALLBACK = 'https://globibot.com/bot/twitter/authorize'
     def request_token(self, user):
-        tweaked_twitter_client = TwitterAPI(
-            auth        = self.oauth,
+        oauth = twitter.OAuth(
+            self.credentials.access_token,
+            self.credentials.access_token_secret,
+            self.credentials.consumer_key,
+            self.credentials.consumer_secret,
+        )
+        tweaked_twitter_client = twitter.Twitter(
+            auth        = oauth,
             format      = '',
             api_version = None
         )
@@ -401,13 +408,13 @@ class Twitter(Plugin):
                 return token
 
     def save_user(self, user, oauth_token, oauth_verifier):
-        oauth = OAuth(
+        oauth = twitter.OAuth(
             oauth_token,
             self.request_tokens[oauth_token],
             self.config.get(c.CONSUMER_KEY_KEY),
             self.config.get(c.CONSUMER_SECRET_KEY),
         )
-        tweaked_twitter_client = TwitterAPI(
+        tweaked_twitter_client = twitter.Twitter(
             auth        = oauth,
             format      = '',
             api_version = None
