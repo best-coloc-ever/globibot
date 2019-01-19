@@ -23,7 +23,7 @@ def definition_embed(definitions, index):
 
     embed.set_author(
         name     = definition['word'],
-        icon_url = 'http://www.urbandictionary.com/favicon.ico',
+        icon_url = 'https://d2gatte9o95jao.cloudfront.net/assets/apple-touch-icon-55f1ee4ebfd5444ef5f8d5ba836a2d41.png',
         url      = definition['permalink']
     )
 
@@ -75,7 +75,10 @@ class UrbanDictionary(Plugin):
 
             new_embed = definition_embed(definitions, new_index)
 
-            await self.bot.clear_reactions(message)
+            try:
+                await self.bot.clear_reactions(message)
+            except:
+                pass
             await self.bot.edit_message(message, '', embed=new_embed)
 
             self.definitions_by_message[message.id] = (definitions, new_index)

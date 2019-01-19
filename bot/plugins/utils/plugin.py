@@ -6,10 +6,30 @@ from globibot.lib.helpers import formatting as f
 from globibot.lib.helpers.hooks import master_only
 
 from .units import unit_value_parser, system_convert, sum_units
+from .timezones import time_parser, Time, TIMEZONES
 
 from itertools import groupby
 
+import json
+
+TZ_INFOS_FILE = '/tmp/globibot/tzs'
+
 class Utils(Plugin):
+
+    def load(self):
+        self.last_time = None
+
+        try:
+            with open(TZ_INFOS_FILE, 'r') as f:
+                self.tzs = json.load(f)
+        except:
+            self.tzs = dict()
+
+        self.last_values_to_convert = dict()
+
+    def dump_tzs(self):
+        with open(TZ_INFOS_FILE, 'w') as f:
+            json.dump(self.tzs, f)
 
     PREFIXES = ['!', '-', '/']
 
@@ -18,8 +38,25 @@ class Utils(Plugin):
         for prefix in Utils.PREFIXES
     ]).named('[{}]{}'.format(''.join(Utils.PREFIXES), s)) >> p.to_s
 
-    @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'), master_only)
-    async def convert(self, message, unit_values):
+    @command(p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'))
+    async def store_unit_values(self, message, unit_values):
+        self.last_values_to_convert[message.channel.id] = (unit_values, self.unit_convert)
+
+    # @command(p.bind(p.oneplus(p.sparsed(time_parser)), 'times'))
+    # async def store_time_values(self, message, times):
+    #     self.last_values_to_convert[message.channel.id] = (times, self.time_convert)
+
+    @command(p.string('!convert') + p.eof)
+    async def convert_last(self, message):
+        try:
+            values, convertor = self.last_values_to_convert[message.channel.id]
+        except KeyError:
+            pass
+        else:
+            await convertor(message, values)
+
+    @command(p.string('!convert') + p.bind(p.oneplus(p.sparsed(unit_value_parser)), 'unit_values'))
+    async def unit_convert(self, message, unit_values):
         converted = [(uv, system_convert(uv)) for uv in unit_values]
         output = ['{} = {}'.format(uv, conv) for uv, conv in converted]
 
@@ -40,6 +77,63 @@ class Utils(Plugin):
                 .format(f.code_block(output)),
             delete_after = 60
         )
+
+    @command(p.string('!tz') + p.string('set') + p.bind(p.word, 'tz'))
+    async def set_tz(self, message, tz):
+        tz = tz.upper()
+
+        if tz not in TIMEZONES:
+            await self.send_message(
+                message.channel,
+                '{} available timezones are `{}`'.format(message.author.mention, TIMEZONES),
+                delete_after=15
+            )
+            return
+
+        self.tzs[message.author.id] = tz
+        self.dump_tzs()
+
+        await self.send_message(
+            message.channel,
+            '{} I set your default timezone to `{}`'.format(message.author.mention, tz),
+            delete_after=5
+        )
+
+    # @command(p.string('!convert') + p.bind(p.oneplus(p.sparsed(time_parser)), 'times'))
+    # async def time_convert(self, message, times):
+    #     tz = self.tzs.get(message.author.id)
+    #     valid_time_props = [time for time in times if any(map(lambda x: x is not None, time[1:]))]
+
+    #     if not valid_time_props:
+    #         return
+
+    #     times = [Time(h, m, mer, r_tz or tz) for (h, m, mer, r_tz) in valid_time_props]
+    #     response = f.code_block('\n'.join(
+    #         '{}'.format(t) for t in times
+    #     ))
+
+    #     self.last_time = times[-1]
+
+    #     await self.send_message(
+    #         message.channel,
+    #         response,
+    #         delete_after=10
+    #     )
+
+    # @command(p.string('!timetable') + p.bind(p.maybe(time_parser), 'time_prop'))
+    # async def timetable(self, message, time_prop=None):
+    #     if time_prop is not None and not any(time_prop[1:]):
+    #         return
+
+    #     time = Time(*time_prop) if time_prop else self.last_time
+    #     if time_prop and time_prop[3] is None:
+    #         time.tz = self.tzs.get(message.author.id)
+
+    #     await self.send_message(
+    #         message.channel,
+    #         f.code_block(time.timetable()),
+    #         delete_after=30
+    #     )
 
     @command(p.string('!user') + p.bind(p.mention, 'user'))
     async def user_id(self, message, user):
@@ -126,6 +220,8 @@ class Utils(Plugin):
         if snippet.language.lower() != 'sql':
             return
 
+        m = await self.send_message(message.channel, 'processing...')
+
         try:
             with self.transaction() as trans:
                 trans.execute(snippet.code)
@@ -138,3 +234,5 @@ class Utils(Plugin):
                 await self.send_message(message.channel, text)
         except Exception as e:
             await self.send_message(message.channel, '```\n{}\n```'.format(e))
+
+        await self.bot.delete_message(m)

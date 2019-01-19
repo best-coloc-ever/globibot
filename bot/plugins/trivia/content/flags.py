@@ -6,15 +6,12 @@ from io import BytesIO
 DELAY = 20
 
 async def premise(item):
-    country, image = item
+    _, token = item
 
-    flag_image_url = 'https://www.countries-ofthe-world.com/{}'.format(image)
-    flag_image = await Utils.fetch(flag_image_url)
+    flag_image_url = f'https://glo.bi/trivia/flags/{token}.png'
 
     return dict(
-        file_path=BytesIO(flag_image),
-        filename='flag.png',
-        content='You have {} seconds to guess the name of that country'.format(DELAY),
+        content=f'You have {DELAY} seconds to guess the name of that country\n{flag_image_url}'
     )
 
 def resolve(item, answers):

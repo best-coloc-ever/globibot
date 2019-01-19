@@ -42,13 +42,13 @@ def save_code_as_file(extension):
     return run
 
 EVALSPEC_PER_LANGUAGES = dict(
-    python     = file_eval_spec('python:3.6',   'py',  ('python',     '{file}')),
+    python     = file_eval_spec('python:3.7',   'py',  ('python',     '{file}')),
     javascript = file_eval_spec('node:9.4',     'js',  ('node',       '{file}')),
     haskell    = file_eval_spec('haskell:8.2',  'hs',  ('runhaskell', '{file}')),
-    golang     = file_eval_spec('golang:1.9',   'go',  ('go', 'run',  '{file}')),
-    rust       = file_eval_spec('rust:1.23',    'rs',  ('bash', '-c', 'rustc {file} -o app && ./app')),
-    cpp        = file_eval_spec('gcc:7.3',      'cpp', ('bash', '-c', 'g++ -std=c++17 -O3 {file} -o app && ./app')),
-    c          = file_eval_spec('gcc:7.3',      'c',   ('bash', '-c', 'gcc -O3 {file} -o app && ./app')),
+    golang     = file_eval_spec('golang:1.11',  'go',  ('bash', '-c', 'cp {file} /go && cd /go && go get -d ./... && go run {file}')),
+    rust       = file_eval_spec('rust:1.30',    'rs',  ('bash', '-c', 'rustc {file} -o app && ./app')),
+    cpp        = file_eval_spec('gcc:8.2',      'cpp', ('bash', '-c', 'g++ -std=c++17 -O3 {file} -o app && ./app')),
+    c          = file_eval_spec('gcc:8.2',      'c',   ('bash', '-c', 'gcc -O3 {file} -o app && ./app')),
     shell      = file_eval_spec('busybox:1.28', 'sh',  ('sh',         '{file}')),
 )
 

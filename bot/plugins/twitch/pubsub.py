@@ -6,6 +6,12 @@ import string
 import asyncio
 import websockets
 
+import os
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
+
 def nonce(n = 32):
     return ''.join(
         random.choice(string.ascii_uppercase + string.digits)
@@ -63,7 +69,7 @@ class PubSub:
     class Topics:
         VIDEO_PLAYBACK = lambda name: 'video-playback.{}'.format(name)
 
-    def __init__(self, debug, run_async):
+    def __init__(self, debug, run_async, bot):
         self.debug = debug
         self.run_async = run_async
 
@@ -71,6 +77,7 @@ class PubSub:
         self.iterators_by_topic = defaultdict(dict)
         self.ws = None
         self.service_started = False
+        self.bot = bot
 
     async def shutdown(self):
         for iterators in self.iterators_by_topic.values():
@@ -130,6 +137,12 @@ class PubSub:
         self.ws = None
         self.service_started = False
         self.debug('Disconnected from PubSub service')
+
+        await self.bot.send_message(
+            self.bot.find_user('89108411861467136'),
+            "Twitch fucking disconnected, please contact my master and tell him to reconnect :3"
+        )
+        touch('/app/plugins/twitch/plugin.py')
 
     async def on_ws_data(self, data):
         self.debug('PubSub data received: {}'.format(data))

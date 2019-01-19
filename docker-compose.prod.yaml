@@ -2,6 +2,13 @@ version: '2'
 
 services:
 
+  bot:
+    restart: always
+
   web:
-    ports:
-      - '443:443'
+    networks:
+      default:
+        aliases:
+          - globibot_entrypoint
+    # ports:
+    #   - '4242:443'

@@ -4,45 +4,37 @@ from globibot.lib.decorators import command
 from globibot.lib.helpers import parsing as p
 from globibot.lib.helpers.hooks import master_only
 
-from cleverbot import Cleverbot
+from json import loads as json_loads
 
-from collections import defaultdict
+import apiai
 
 class ChatBot(Plugin):
 
     def load(self):
-        self.chat_bot = Cleverbot()
-
-        self.dm_bots = defaultdict(Cleverbot)
+        #self.ai = apiai.ApiAI(self.config.get('APIAI_ACCESS_TOKEN'))
+        self.ai = apiai.ApiAI('13381aedc4e5471498f7c79a9c058dab')
 
     @command(
-        p.bind(p.mention, 'user') + p.bind((p.many(p.any_type >> p.to_s)), 'words'),
-        master_only
+        p.bind(p.mention, 'user') + p.bind((p.many(p.any_type >> p.to_s)), 'words'), master_only
     )
     async def answer(self, message, user, words):
         if str(user) != self.bot.user.id:
             return
 
         await self.bot.send_typing(message.channel)
-        response = self.chat_bot.ask(' '.join(words))
+        request = self.ai.text_request()
+        request.session_id = 'discord_master_{}'.format(message.channel.id)
+        request.query = ' '.join(words)
 
-        if response:
+        response = request.getresponse()
+        try:
+            response_data = json_loads(response.read().decode())
+            self.debug(response_data)
+            speech = response_data['result']['fulfillment']['speech']
+        except:
+            pass
+        else:
             await self.send_message(
                 message.channel,
-                response
-            )
-
-    @command(p.bind((p.many(p.any_type >> p.to_s)), 'words'))
-    async def answer_dm(self, message, words):
-        if message.server:
-            return
-
-        await self.bot.send_typing(message.channel)
-        bot = self.dm_bots[message.author.id]
-        response = bot.ask(' '.join(words))
-
-        if response:
-            await self.send_message(
-                message.channel,
-                response
+                speech
             )

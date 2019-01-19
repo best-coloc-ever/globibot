@@ -25,7 +25,7 @@ def master_only_verbose(bot, message):
         raise NotMasterError
     return True
 
-def user_cooldown(seconds):
+def user_cooldown(seconds, verbose=False):
     cache = defaultdict(lambda: 0)
 
     def call(bot, message):
@@ -34,6 +34,8 @@ def user_cooldown(seconds):
         if now - last_used >= seconds:
             cache[message.author.id] = now
             return True
+        if verbose:
+            raise InCooldownError(seconds - (now - last_used))
         return False
 
     call.__doc__ = 'User cooldown {}s'.format(seconds)
@@ -46,7 +48,7 @@ class InCooldownError(PluginException):
 
     def error(self, message):
         return (
-            '{} calm down cowboy (command usable in `{:.2f}` seconds)'
+            '{} calm down cowboy 🤠 (command usable in `{:.2f}` seconds)'
                 .format(message.author.mention, self.usable_in)
         )
 

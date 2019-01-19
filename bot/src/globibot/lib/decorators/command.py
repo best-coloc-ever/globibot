@@ -21,6 +21,9 @@ def command(parser, *args, **kwargs):
             ])
         except NoParseError:
             return False, {}
+        except Exception as e:
+            print('FAIL TO PARSE {}: {} {}'.format(repr(e), e, parser.name))
+            return False, {}
 
     # For introspection
     validate_parser.parser = parser

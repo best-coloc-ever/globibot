@@ -5,6 +5,14 @@ from discord import ChannelType
 
 from .player import ItemType
 
+WHITELISTED_DJ_ADMINS = [
+    '89108411861467136', # Globi
+    '98469036936945664', # Marcus
+    '124948152414502914', # Fanta
+    '123149655126048769', # Fanta's bf
+    '120264712880521218', # ErPacheco
+]
+
 def server_data(server):
     return dict(
         id       = server.id,
@@ -29,6 +37,9 @@ def voice_data(server, user):
 
 @with_body_arguments('server_id', 'channel_id')
 async def join_voice(handler, server_id, channel_id):
+    if handler.current_user.id not in WHITELISTED_DJ_ADMINS:
+        return dict(error='You are not allowed to do that')
+
     server = handler.bot.find_server(server_id)
 
     if server is None:
@@ -45,6 +56,9 @@ async def join_voice(handler, server_id, channel_id):
 
 @with_body_arguments('server_id')
 async def leave_voice(handler, server_id):
+    if handler.current_user.id not in WHITELISTED_DJ_ADMINS:
+        return dict(error='You are not allowed to do that')
+
     server = handler.bot.find_server(server_id)
 
     if server is None:

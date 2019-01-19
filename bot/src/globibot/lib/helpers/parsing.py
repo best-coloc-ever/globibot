@@ -22,7 +22,7 @@ TOKEN_SPEC = [
     (TokenType.Channel, (r'<#[0-9]+>',)),
     (TokenType.Emoji,   (r'<:\S+:[0-9]+>',)),
     (TokenType.Snippet, (r'```\S+\n(.*?)```', DOTALL)),
-    (TokenType.Word,    (r'\S+',)), # Word is currently a catch-all
+    (TokenType.Word,    (r'[^\d\s]+',)), # Word is currently a catch-all
 ]
 
 default_tokenizer = make_tokenizer(TOKEN_SPEC)
@@ -128,7 +128,7 @@ def int_range(low, high):
             return False
         return to_i(token) in range(low, high + 1)
 
-    return p.some(predicate) >> to_i
+    return p.some(predicate).named(f'{low}..{high}') >> to_i
 
 def one_of(parser, first, *rest):
     combined_parser = parser(first)

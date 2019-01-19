@@ -32,11 +32,12 @@ class PluginReloader(PatternMatchingEventHandler):
         self.plugin = None
         self.module_imported = False
         self.reload_queue = Queue()
+        self.debouncing = False
 
         asyncio.ensure_future(self.watch_modified())
 
     def on_modified(self, modified):
-        if self.reload_queue.empty():
+        if not self.debouncing and self.reload_queue.empty():
             self.reload_queue.put(modified)
 
     def initialize(self):
@@ -76,14 +77,20 @@ class PluginReloader(PatternMatchingEventHandler):
             while self.reload_queue.empty():
                 await asyncio.sleep(.5)
 
+            self.debouncing = True
+
+            async def undebounce():
+                await asyncio.sleep(3)
+                self.debouncing = False
+
+            asyncio.ensure_future(undebounce())
+
             self.reload_queue.get()
 
             if self.module_imported:
                 unsafe(self.reload_plugin)
             else:
                 unsafe(self.load_plugin)
-
-            await asyncio.sleep(1) # Small debounce
 
             self.reload_queue.task_done()
 

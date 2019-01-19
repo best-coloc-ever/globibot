@@ -12,7 +12,6 @@ from .pubsub import PubSub
 from .handlers import TwitchStatusHandler, OAuthRequestTokenHandler, \
     OAuthAuthorizeHandler, TwitchDisconnectHandler, TwitchFollowedHandler, \
     TwitchMentionHandler, TwitchWhisperHandler
-
 from tornado.escape import json_decode
 from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 from tornado.platform.asyncio import to_asyncio_future
@@ -21,6 +20,7 @@ from collections import namedtuple
 from urllib.parse import urlencode
 
 from discord import Embed
+from time import time
 
 import random
 import string
@@ -61,22 +61,28 @@ def twitch_alert_embed(channel, show_pro_tip=False):
 
     embed.set_author(
         name     = channel.display_name,
-        icon_url = 'https://twitch.tv/favicon.ico',
+        icon_url = 'https://static1.squarespace.com/static/575c65aa07eaa03e33e6f1c7/t/58142945cd0f682fcb954b14/1478192544216/twitch+png.png?format=300w',
         url      = channel.url
     )
 
     if show_pro_tip:
         embed.add_field(
             name  = 'Pro tip',
-            value = 'You can now link your Twitch account on '
+            value = 'You can link your Twitch account on '
                     '[globibot.com](https://globibot.com/#connections) '
                     'to get notified when your favorite streamers go live',
         )
+
+    # embed.set_footer(text='Say: "Arigato roboto chan" or get squinty eyes for 7 years')
+    embed.set_footer(text='Thank the bot in English or get banned by snowflake mods')
 
     embed.set_thumbnail(url=channel.logo)
     embed.color = 0x6441a4
 
     return embed
+
+LIRIK_LIVE_ROLE_ID = '527487775361204224'
+LIRIK_SERVER_ID = '84822922958487552'
 
 class Twitch(Plugin):
 
@@ -88,7 +94,7 @@ class Twitch(Plugin):
             self.warning('Missing client id: API calls might not work')
 
         self.api = TwitchAPI(self.client_id, self.debug)
-        self.pubsub = PubSub(self.debug, self.run_async)
+        self.pubsub = PubSub(self.debug, self.run_async, self.bot)
 
         self.channels_info = dict()
         self.restore_monitored()
@@ -107,6 +113,52 @@ class Twitch(Plugin):
         self.token_states = dict()
 
         self.run_async(self.refresh_channels_info_forever())
+
+        self.lirik_live_role = next(
+            role for role in self.bot.find_server(LIRIK_SERVER_ID).role_hierarchy
+            if role.id == LIRIK_LIVE_ROLE_ID
+        )
+
+        # self.run_async(self.noti_users())
+
+    # async def noti_users(self):
+    #     users = [
+    #         '136219884798345217',
+    #         '200356566946283521',
+    #         '105877749662527488',
+    #         '98124641649819648',
+    #         '127551953906434048',
+    #         '158615225447219200',
+    #         '94954921564045312',
+    #         '254047581150248970',
+    #         '105046442556571648',
+    #         '189037788975464448',
+    #         '266507670213623808',
+    #         '138014170892337152',
+    #         '271783908549459978',
+    #         '86042414355070976',
+    #         '208211832249384960',
+    #         '154653616270082050',
+    #         '214395235986309120',
+    #         '98831263086948352',
+    #         '98469035703832576',
+    #         '89108411861467136',
+    #         '281927861508767744',
+    #         '116657724967616518',
+    #         '305743486534025219',
+    #         '99656214966706176',
+    #         '181336979810680843',
+    #         '129304117544878087',
+    #         '85536304992886784',
+    #     ]
+
+    #     message = 'Hello there!\nI noticed that you are using the Twitch monitoring whisper feature.\nDue to some user abuses and some Twitch API limitations, I am disabling that feature for now.\nFeel free to contact Globi <@89108411861467136> for more information.'
+
+    #     for user in users:
+    #         try:
+    #             await self.bot.send_message(self.bot.find_user(user), message)
+    #         except Exception as e:
+    #             self.error('Error for user {}: {}'.format(user, e))
 
     def unload(self):
         asyncio.ensure_future(self.pubsub.shutdown())
@@ -262,11 +314,21 @@ class Twitch(Plugin):
                 await self.refresh_channel_info(channel_name)
 
     async def refresh_channel_info(self, channel_name):
+        self.debug(f'REFRESH CHANNEL INFO FOR {channel_name}')
         channel = await self.api.channel(channel_name)
         self.channels_info[channel_name] = channel
 
     async def monitor_forever(self, channel_name, server):
-        self.info('Monitoring: {}'.format(channel_name))
+        CHANNELS_PER_SERVER = {
+            '373854207310036992': '373860008288321546',
+            '85441497989664768': '484947162531102743'
+        }
+        try:
+            discord_chan_id = CHANNELS_PER_SERVER[server.id]
+        except:
+            discord_chan = server.default_channel
+        else:
+            discord_chan = next(c for c in server.channels if c.id == discord_chan_id)
 
         await self.refresh_channel_info(channel_name)
         events = await self.pubsub.subscribe(
@@ -274,26 +336,50 @@ class Twitch(Plugin):
             server.id
         )
 
+        viewers = []
+        last_live = None
+
         async for event in events:
             channel = self.channels_info[channel_name]
             if event['type'] == 'stream-up':
-                users = self.users_to_mention(channel.name, server)
-                mentions = ' '.join(f.mention(user_id) for user_id in users)
+
+                now = time()
+                if last_live is not None and now - last_live < 60 * 10:
+                    continue
+                last_live = now
+
+                if server.id == LIRIK_SERVER_ID:
+                    mentions = self.lirik_live_role.mention
+                else:
+                    users = self.users_to_mention(channel.name, server)
+                    mentions = ' '.join(f.mention(user_id) for user_id in users)
                 await self.send_message(
-                    server.default_channel, '{}\nWake up!'.format(mentions),
+                    discord_chan, '{}\nWake up!'.format(mentions),
                     embed = twitch_alert_embed(channel, True)
                 )
 
+            if event['type'] == 'viewcount':
+                viewers.append(event['viewers'])
+
             if event['type'] == 'stream-down':
+                try:
+                    average_viewers = round(sum(viewers) / len(viewers))
+                    max_viewers = max(viewers)
+                except:
+                    average_viewers = 0
+                    max_viewers = 0
+                viewers = []
                 await self.send_message(
                     server.default_channel,
-                    '`{}` just went offline 😢'.format(channel.display_name)
+                    '`{}` just went offline 😢\n'
+                    'Average viewer count for this stream: `{}` (peaked at `{}`)'
+                        .format(channel.display_name, average_viewers, max_viewers)
                 )
 
         self.info('Stopped monitoring: {}'.format(channel_name))
 
     async def whisper_monitor_forever(self, channel_name, user):
-        await self.refresh_channel_info(channel_name)
+        # await self.refresh_channel_info(channel_name)
 
         events = await self.pubsub.subscribe(
             PubSub.Topics.VIDEO_PLAYBACK(channel_name),
@@ -348,12 +434,12 @@ class Twitch(Plugin):
                 self.run_async(self.monitor_forever(channel.name, server))
 
             # Whispers
-            trans.execute(q.get_all_notify_whispers)
+            # trans.execute(q.get_all_notify_whispers)
 
-            for user_id, channel_name in trans.fetchall():
-                user = self.bot.find_user(str(user_id))
-                if user:
-                    self.run_async(self.whisper_monitor_forever(channel_name, user))
+            # for user_id, channel_name in trans.fetchall():
+            #     user = self.bot.find_user(str(user_id))
+            #     if user:
+            #         self.run_async(self.whisper_monitor_forever(channel_name, user))
 
     def request_token_state(self, user):
         state = ''.join(

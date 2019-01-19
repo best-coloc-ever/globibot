@@ -37,6 +37,10 @@ class Trivia(Plugin):
         global_cooldown(20, True)
     )
     async def trivia(self, message, topic):
+        # if message.channel.id == "84822922958487552":
+        #     await self.send_message(message.channel, "<#401160296732950564>")
+        #     return
+
         try:
             trivia_gen = self.trivias[topic.lower()]
         except KeyError:

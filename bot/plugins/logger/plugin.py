@@ -18,12 +18,12 @@ class Logger(Plugin):
         self.ws_consumers = defaultdict(set)
 
         context = dict(plugin=self, bot=self.bot)
-        self.add_web_handlers(
-            (r'/ws/logs', LoggerWebSocketHandler, dict(plugin=self)),
-            (r'/logs/top', LogsApiTopHandler, context),
-            (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, context),
-            (r'/logs/attachments/(?P<user_id>\d+)', LogsAttachmentsHandler, context),
-        )
+        #self.add_web_handlers(
+        #    (r'/ws/logs', LoggerWebSocketHandler, dict(plugin=self)),
+        #    (r'/logs/top', LogsApiTopHandler, context),
+        #    (r'/logs/user/(?P<user_id>\d+)', LogsApiUserHandler, context),
+        #    (r'/logs/attachments/(?P<user_id>\d+)', LogsAttachmentsHandler, context),
+        #)
 
     '''
     Raw events
@@ -176,13 +176,16 @@ class Logger(Plugin):
             content       = message.content,
             clean_content = message.clean_content
         )
-        author = dict(
-            id       = message.author.id,
-            name     = message.author.name,
-            nick     = message.author.nick,
-            joindate = message.author.joined_at.timestamp(),
-            color    = message.author.color.to_tuple()
-        )
+        try:
+            author = dict(
+                id       = message.author.id,
+                name     = message.author.name,
+                nick     = message.author.display_name if not message.channel.is_private else message.author.nick,
+                joindate = message.author.joined_at.timestamp(),
+                color    = message.author.color.to_tuple()
+            )
+        except:
+            return
         channel = dict(
             id   = message.channel.id,
             name = message.channel.name

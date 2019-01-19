@@ -23,7 +23,7 @@ class WebApplication(web.Application):
         super().__init__(*args, **kwargs)
 
         self.port = port
-        self.url_specs = defaultdict(list)
+        self.handlers = defaultdict(list)
 
     async def run(self):
         try:
@@ -33,16 +33,17 @@ class WebApplication(web.Application):
             logger.error('Could not start web server: {}'.format(e))
 
     def add_routes(self, context, *handlers):
-        self.url_specs[context] += [
-            web.URLSpec(*handler).regex
-            for handler in handlers
+        self.handlers[context] += [
+            handler[1] for handler in handlers
         ]
 
         self.add_handlers(r'.*$', handlers)
 
     def remove_routes(self, context):
-        filtered_handlers = [
-            handler for handler in self.handlers if
-            handler[1][0].regex not in self.url_specs[context]
+        logger.debug(len(self.default_router.rules))
+        filtered_rules = [
+            rule for rule in self.default_router.rules if
+            len([r for r in rule.target.rules if r.target not in self.handlers[context]])
         ]
-        self.handlers = filtered_handlers
+        self.default_router.rules = filtered_rules
+        logger.debug(len(filtered_rules))

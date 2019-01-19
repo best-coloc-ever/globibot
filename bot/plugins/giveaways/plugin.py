@@ -14,7 +14,7 @@ import asyncio
 class Giveaways(Plugin):
 
     def load(self):
-        self.giveaways_left = defaultdict(lambda: 3)
+        self.giveaways_left = defaultdict(lambda: 5)
         self.in_progress = dict()
 
         context = dict(

@@ -13,7 +13,7 @@ async def premise(item):
 
     if '```' in code:
         warning = '\n⚠️The code contained triple backquotes that were replaced by triple quotes'
-        code.replace('```', '\'\'\'')
+        code = code.replace('```', '\'\'\'')
     else:
         warning = ''
 

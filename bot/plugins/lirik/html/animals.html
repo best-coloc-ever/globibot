@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Animals</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    img {
+      max-width: 32em;
+      max-height: 32em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 32% 32% 32%
+    }
+  </style>
+</head>
+<body>
+  <div id="main"></div>
+
+  <script>
+    class ImageCollection {
+      constructor(urls) {
+        this.urls = urls
+        this.rendered = 0
+
+        this.imageContainer = document.createElement('div')
+        this.imageContainer.classList.add('grid')
+
+        this.loadMore = document.createElement('button')
+      }
+
+      loadFirsts() {
+        if (this.rendered == 0)
+          this.doLoadMore()
+      }
+
+      doLoadMore() {
+        const toRender = this.urls.slice(this.rendered, this.rendered + 9);
+        this.rendered += toRender.length
+        toRender.forEach(url => {
+          const image = document.createElement('img')
+          image.src = url
+          this.imageContainer.appendChild(image)
+        })
+        if (this.rendered >= this.urls.length) {
+          this.loadMore.disabled = true;
+        }
+
+      }
+
+      render() {
+        const container = document.createElement('div')
+
+        this.loadMore.innerText = 'Load More'
+        this.loadMore.onclick = () => this.doLoadMore()
+
+        container.appendChild(this.imageContainer)
+        container.appendChild(this.loadMore)
+
+        return container
+      }
+    }
+
+    function renderPet(name, urls) {
+      const capitalizedName = `${name.charAt(0).toUpperCase()}${name.slice(1)}`
+
+      const wrapper = document.createElement('div')
+      const header = document.createElement('h3')
+      wrapper.appendChild(header)
+
+      const detail = document.createElement('details')
+      const summary = document.createElement('summary')
+      summary.innerText = `${capitalizedName} (${urls.length})`
+      detail.appendChild(summary)
+      header.appendChild(detail)
+
+      const collection = new ImageCollection(urls)
+      detail.appendChild(collection.render())
+
+      detail.ontoggle = () => collection.loadFirsts()
+
+      return wrapper
+    }
+
+    function render(data) {
+      const main = document.getElementById("main")
+
+      const petComponents = Object.entries(data)
+        .map(([name, urls]) => renderPet(name, urls))
+
+      petComponents.forEach(comp => main.appendChild(comp))
+    }
+
+    fetch('/bot/animals/data.json')
+      .then(r => r.json())
+      .then(render)
+
+  </script>
+</body>
+</html>

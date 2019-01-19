@@ -75,12 +75,34 @@ class Meta(Plugin):
     @command(p.string('!status'), master_only)
     async def status(self, message):
         status = message.clean_content[len('!status'):].strip()
-        await self.bot.change_status(Game(name=status))
+        self.debug(status)
+        await self.bot.change_presence(game=Game(name=status, url="https://globibot.com", type=0))
 
     @command(p.string('!name'), master_only)
     async def name(self, message):
         name = message.clean_content[len('!name'):].strip()
         await self.bot.edit_profile(username=name)
+
+    @command(p.string('!emojis'), master_only)
+    async def emojis(self, message):
+        channel = message.channel
+
+        emojis = [
+            emoji
+            for server in self.bot.servers
+            for emoji in usable_emojis(server, server.get_member(self.bot.user.id).roles)
+            if channel.server == server or channel.permissions_for(channel.server.get_member(self.bot.user.id)).external_emojis
+        ]
+
+        # usable_emojis = [
+        #     emoji
+        #     for emoji in all_emojis
+        #     if channel.permissions_for()
+        # ]
+
+        data = f'{len(emojis)} emojis: {" ".join(str(emoji) for emoji in emojis)}'
+
+        await self.send_message(channel, data)
 
     def permissions_in(self, channel):
         member = channel.server.get_member(self.bot.user.id)
@@ -91,3 +113,10 @@ class Meta(Plugin):
         sets = [permission_names(perms) for perms in [standard_perms] + overwrites]
 
         return reduce(set.union, sets)
+
+def usable_emojis(server, roles):
+    return [
+        emoji
+        for emoji in server.emojis
+        if len(emoji.roles) == 0 or len(set(roles) ^ set(emoji.roles)) > 0
+    ]

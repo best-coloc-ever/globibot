@@ -94,16 +94,16 @@ class Dj(Plugin):
 
         await self.delete_message_after(message, 5)
 
-    @command(p.string('!play'))
-    async def play(self, message):
-        await self.queue_item(
-            message.server,
-            message.author,
-            ItemType.YTDLLink,
-            message.clean_content[6:].strip()
-        )
+    # @command(p.string('!play'))
+    # async def play(self, message):
+    #     await self.queue_item(
+    #         message.server,
+    #         message.author,
+    #         ItemType.YTDLLink,
+    #         message.clean_content[6:].strip()
+    #     )
 
-        await self.delete_message_after(message, 5)
+    #     await self.delete_message_after(message, 5)
 
     @command(p.string('!skip'), master_only)
     async def skip(self, message):
@@ -149,8 +149,8 @@ class Dj(Plugin):
             pass
         else:
             if skip_m.id == m.id:
-                await self.bot.delete_message(m)
                 del self.ongoing_skips[server_id]
+                await self.bot.delete_message(m)
 
     async def queue_tts(self, server, user, content, lang=None):
         sound_file = self.tts.talk_in(server, content, lang)
@@ -165,7 +165,11 @@ class Dj(Plugin):
     async def join_voice(self, channel):
         voice = self.bot.voice_client_in(channel.server)
         if voice is None:
-            await self.bot.join_voice_channel(channel)
+            try:
+                voice = await self.bot.join_voice_channel(channel)
+            except Exception as e:
+                self.error(repr(e))
+            self.warning(voice)
         else:
             await voice.move_to(channel)
 
@@ -192,7 +196,7 @@ class Dj(Plugin):
             player = ServerPlayer(server, self.bot.voice_client_in, get_volume)
             self.players[server.id] = player
             on_next = lambda item: self.notify_ws_next(server, item)
-            self.run_async(player.start(self.error, on_next))
+            self.run_async(player.start(self.error, self.debug, on_next))
 
         return player
 

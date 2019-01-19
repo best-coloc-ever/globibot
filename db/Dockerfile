@@ -1,4 +1,4 @@
-FROM postgres
+FROM postgres:9.5
 
 RUN apt-get update -y && apt-get install -y \
     curl

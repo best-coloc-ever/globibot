@@ -3,7 +3,7 @@ from globibot.lib.decorators import command
 from globibot.lib.helpers import parsing as p
 from globibot.lib.helpers import formatting as f
 
-from .handlers import ContainerLogHandler
+from .handlers import ContainerLogHandler, HtmlPreviewHandler
 from .specs import EVALSPEC_PER_ALIASES, EVALSPEC_PER_LANGUAGES
 from . import constants as C
 
@@ -12,6 +12,7 @@ from functools import partial
 
 import asyncio
 import docker
+import uuid
 import os
 
 class Eval(Plugin):
@@ -20,11 +21,15 @@ class Eval(Plugin):
         self.docker = docker.from_env()
 
         self.container_logs = defaultdict(list)
+        self.html_pages = dict()
 
         context = dict(plugin=self)
         self.add_web_handlers(
             (r'/eval/logs/(?P<container_id>\S+)', ContainerLogHandler, context),
+            (r'/eval/html/(?P<page_id>\S+)', HtmlPreviewHandler, context),
         )
+
+        self.last_snippets = dict()
 
     '''
     Commands
@@ -41,25 +46,50 @@ class Eval(Plugin):
         )
 
     @command(p.bind(p.sparsed(p.snippet), 'snippet'))
+    async def on_snippet_html(self, message, snippet):
+        if snippet.language != 'html':
+            return
+
+        query = self.query_yes_no(
+            f'{message.author.mention} preview this in a browser ?',
+            channel=message.channel,
+            author=message.author,
+            timeout=20
+        )
+        if await query:
+            page_id = uuid.uuid4().hex
+            self.html_pages[page_id] = snippet.code
+            url = f'https://globibot.com/bot/eval/html/{page_id}'
+            await self.send_message(
+                message.channel,
+                f'Preview available here: {url}'
+            )
+
+    @command(p.bind(p.sparsed(p.snippet), 'snippet'))
     async def on_snippet(self, message, snippet):
         try:
             spec = EVALSPEC_PER_ALIASES[snippet.language]
         except KeyError:
             pass
         else:
-            query = self.query_yes_no(
-                f'{message.author.mention} Run this code with `{spec.image}` ?',
-                channel=message.channel,
-                author=message.author,
-                timeout=20
+            self.last_snippets[message.author.id] = snippet
+
+    @command(p.string('!eval') + p.eof)
+    async def eval_last_snippet(self, message):
+        try:
+            snippet = self.last_snippets[message.author.id]
+        except KeyError:
+            await self.send_message(
+                message.channel,
+                f'{message.author.mention} I did not find any recent snippet from you'
             )
-            if await query:
-                await self.eval(
-                    send_message=partial(self.send_message, message.channel),
-                    user_key=message.author.id,
-                    code=snippet.code,
-                    spec=spec
-                )
+        else:
+            await self.eval(
+                send_message=partial(self.send_message, message.channel),
+                user_key=message.author.id,
+                code=snippet.code,
+                spec=EVALSPEC_PER_ALIASES[snippet.language]
+            )
 
     '''
     Detail
@@ -89,7 +119,10 @@ class Eval(Plugin):
             logs = self.container_logs[container.id]
             stream = container.logs(**C.CONTAINER_LOG_OPTS)
             logs_url = f'https://globibot.com/bot/eval/logs/{container.id}'
-            await send_message(f'Running... Full logs available at {logs_url}')
+            await send_message(
+                f'Running with `{spec.image}`... '
+                f'Full logs available at {logs_url}'
+            )
 
             streaming_message = await send_message('Waiting for output...')
             self.run_async(self.stream_logs(streaming_message, logs, stream))

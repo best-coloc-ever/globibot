@@ -20,12 +20,15 @@ class Value:
 
         return normalize(Value(n1.unit, n1.value + n2.value))
 
+    def to_string(self):
+        return '{:.2f} {}'.format(self.value, self.unit.name)
+
     def __str__(self):
-        output = '{:.2f} {}'.format(self.value, self.unit.name)
+        output = self.to_string()
 
         normalized = normalize(self)
-        if normalized.unit != self.unit:
-            output += ' ({})'.format(normalized)
+        if normalized.unit != self.unit and normalized.value >= 1:
+            output += ' ({})'.format(normalized.to_string())
 
         return output
 
@@ -40,9 +43,8 @@ class Unit:
 
 class Length(Unit): pass
 
-inch = Length('in', 'inch', 'inches', "''", '"')
+inch = Length('inch', 'inches', "''", '"')
 foot = Length('ft', 'foot', 'feet',   "'")
-yard = Length('yd', 'yard', 'yards')
 mile = Length('mi', 'mile', 'miles')
 
 mm   = Length('mm', 'millimeter', 'millimeters')
@@ -53,7 +55,7 @@ km   = Length('km', 'kilometer',  'kilometers')
 class Mass(Unit): pass
 
 oz = Mass('oz', 'ounce', 'ounces')
-lb = Mass('lb', 'pound', 'pounds')
+lb = Mass('lb', 'lbs', 'pound', 'pounds')
 
 mg = Mass('mg', 'milligram', 'milligrams')
 g  = Mass('g',  'gram',      'grams')
@@ -76,7 +78,7 @@ centigrad  = Temperature('°C', 'centigrad',  'centigrads',  'c')
 
 UNITS = [
     # Lengths
-    inch, foot, yard, mile,
+    inch, foot, mile,
     mm, cm, m, km,
     # Masses
     oz, lb,
@@ -124,7 +126,7 @@ def two_way_ratio(v1, v2):
 SYSTEM_CONVERSIONS = [
     *two_way_ratio(inch(1), mm(25.4)),
     *two_way_ratio(foot(1), cm(30.48)),
-    *two_way_ratio(yard(1), m(0.9144)),
+    *two_way_ratio(foot(10), m(3.048)),
     *two_way_ratio(mile(1), km(1.60934)),
 
     *two_way_ratio(oz(1), mg(28349.5)),
@@ -149,8 +151,7 @@ REDUCE_CONVERSIONS = [
     simple_ratio(m(1000), km(1)),
 
     simple_ratio(inch(12), foot(1)),
-    simple_ratio(foot(3), yard(1)),
-    simple_ratio(yard(1760), mile(1)),
+    simple_ratio(foot(5280), mile(1)),
 
     simple_ratio(oz(16), lb(1)),
 
@@ -173,8 +174,7 @@ INCREASE_CONVERSIONS = [
     simple_ratio(km(1), m(1000)),
 
     simple_ratio(foot(1), inch(12)),
-    simple_ratio(yard(1), foot(3)),
-    simple_ratio(mile(1), yard(1760)),
+    simple_ratio(mile(1), foot(5280)),
 
     simple_ratio(lb(1), oz(16)),
 
@@ -206,9 +206,9 @@ def reduce_convert(value):
         return value
 
     converted = conversion(value)
-    if converted.value >= 1:
+    if converted.value >= 30:
         return reduce_convert(converted)
-    return value
+    return converted
 
 def increase_convert(value):
     try:
@@ -219,7 +219,7 @@ def increase_convert(value):
     converted = conversion(value)
     if converted.value < 1:
         return increase_convert(converted)
-    return value
+    return converted
 
 def increase_max(value):
     try:

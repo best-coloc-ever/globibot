@@ -24,8 +24,8 @@ class Help(Plugin):
     async def general_help(self, message):
         help_message = f.code_block(
             [
-                '!help {}'.format(name) for name in
-                self.enabled_plugins_names
+                '!help {}'.format(name)
+                for name, _ in self.bot.plugin_descriptors
             ],
             language='css' # Kinda look ok
         )
@@ -40,8 +40,8 @@ class Help(Plugin):
     async def plugin_help(self, message, plugin_name):
         plugin_name = plugin_name.lower()
 
-        if plugin_name not in self.enabled_plugins_names:
-            return
+        #if plugin_name not in self.enabled_plugins_names:
+        #    return
 
         plugin = self.get_plugin(plugin_name)
 
@@ -74,8 +74,7 @@ class Help(Plugin):
 
         await self.send_message(
             message.channel,
-            '{} `{}` plugin commands:\n\n{}'
-                .format(message.author.mention, plugin_name, help_message),
+            f'{message.author.mention} `{plugin_name}` plugin commands:\n\n{help_message}',
             delete_after=30
         )
 

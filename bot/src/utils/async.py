@@ -15,6 +15,8 @@ def run_async(*futures):
     except KeyboardInterrupt:
         logger.warning('Shutting down...')
     finally:
+        logger.warning('MAIN EVEN LOOP STOPPED')
+        exit()
         cancel_tasks(loop)
         loop.close()
 

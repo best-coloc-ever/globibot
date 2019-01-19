@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Toxicity Table #general</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tablesorter@2.30.1/dist/js/jquery.tablesorter.combined.min.js"></script>
+  <style>
+    img {
+      width: auto;
+      height: 100%;
+      float: left;
+    }
+
+    .user-wrap {
+      height: 40px;
+    }
+  </style>
+</head>
+<body>
+    <table id="toxicity-table" class="tablesorter" border="1">
+        <col width="200">
+        <thead>
+        <tr>
+            <th>User</th>
+            <th># messages</th>
+            <th>Attack on author</th>
+            <th>Attack on commenter</th>
+            <th>Incoherent</th>
+            <th>Inflammatory</th>
+            <th>Likely to reject</th>
+            <th>Obscene</th>
+            <th>Severe toxicity</th>
+            <th>Spam</th>
+            <th>Toxicity</th>
+            <th>Unsubstantial</th>
+        </tr>
+        </thead>
+        <tbody id="table-body">
+        </tbody>
+    </table>
+
+  <script>
+    const attributes = [
+      'attack_on_author', 'attack_on_commenter', 'incoherent', 'inflammatory',
+      'likely_to_reject', 'obscene', 'severe_toxicity', 'spam', 'toxicity',
+      'unsubstantial',
+    ];
+
+    const td = inner => {
+      let node = document.createElement('td');
+      node.innerText = inner;
+      return node;
+    };
+
+    const tdUser = ([name, avatarUrl]) => {
+      let node = document.createElement('td');
+      let wrap = document.createElement('div');
+      wrap.classList.add('user-wrap')
+      if (avatarUrl) {
+        let avatar = document.createElement('img');
+        avatar.src = avatarUrl;
+        wrap.appendChild(avatar);
+      }
+      let nameDiv = document.createElement('div');
+      nameDiv.innerText = name;
+      wrap.appendChild(nameDiv);
+      node.appendChild(wrap);
+      return node;
+    };
+
+    fetch("/bot/toxicity/data.json")
+      .then(r => r.json())
+      .then(data => {
+        const trs = data
+          .filter(([_, [_unused, messageCount]]) => messageCount > 10)
+          .map(([user, [userData, messageCount]]) => {
+            let tr = document.createElement('tr');
+
+            tr.appendChild(tdUser(user));
+            tr.appendChild(td(messageCount));
+            attributes.forEach(attr => {
+              const percentage = (userData[attr] * 100).toFixed(2);
+              tr.appendChild(td(`${percentage}%`));
+            });
+
+            return tr;
+          })
+
+        let tbody = document.querySelector('#table-body');
+        trs.forEach(tr => tbody.appendChild(tr));
+
+        $("#toxicity-table").tablesorter();
+      })
+  </script>
+</body>
+</html>

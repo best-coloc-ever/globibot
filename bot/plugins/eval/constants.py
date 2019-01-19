@@ -30,7 +30,7 @@ CONTAINER_OPTS = lambda mount_dir, user_volume_name: dict(
     mem_swappiness      = 0,
     cpu_count           = 1,
     cpuset_cpus         = '0',
-    network_disabled    = True,
+    # network_disabled    = True,
     storage_opt         = { 'size': '10G' },
     # Doesn't work 4Head
     device_write_bps    = [{ 'Path': '/dev/sda', 'Rate': 4096 * 1000 }],

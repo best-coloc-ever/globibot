@@ -5,6 +5,10 @@ volumes:
   globibot-data: {}
   # Bundled website
   globibot-web-dist: {}
+  # Dind storage
+  dind-data: {}
+  # Shared bot storage
+  globibot-shared: {}
 
 services:
 
@@ -13,10 +17,23 @@ services:
     volumes:
       # Sources
       - './bot:/app:ro'
-      # Make the use of the host's docker daemon possible
-      - '/var/run/docker.sock:/var/run/docker.sock'
-      # Shared host storage (to allow inceptive docker bind mounts)
-      - '/tmp/globibot:/tmp/globibot'
+      # Shared host storage
+      - './data:/tmp/globibot'
+      # Shared storage
+      - 'globibot-shared:/tmp/shared'
+    environment:
+      DOCKER_HOST: 'tcp://dind:2374'
+
+  dind:
+    image: 'jpetazzo/dind'
+    privileged: true
+    stdin_open: true
+    volumes:
+      - 'dind-data:/var/lib/docker'
+      - 'globibot-shared:/bot/mount'
+    environment:
+      PORT: 2374
+      DOCKER_DAEMON_ARGS: "--storage-driver devicemapper --storage-opt dm.override_udev_sync_check=true"
 
   db:
     build: ./db
