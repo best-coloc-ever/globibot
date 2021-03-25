@@ -22,7 +22,7 @@ psycopg2==2.7.3.2
 pycparser==2.18
 PyNaCl==1.2.1
 pytesseract==0.1.8
-PyYAML==3.12
+PyYAML==5.4
 requests==2.18.4
 six==1.11.0
 tornado==4.5.3
