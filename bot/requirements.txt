@@ -14,7 +14,7 @@ gTTS-token==1.1.1
 idna==2.6
 imageio==2.2.0
 multidict==4.0.0
-numpy==1.14.0
+numpy==1.22.0
 parse==1.8.2
 pathtools==0.1.2
 Pillow==5.0.0
